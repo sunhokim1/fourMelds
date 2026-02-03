@@ -1,0 +1,38 @@
+name: Update code/symbol index
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate CODE_INDEX.md
+        shell: pwsh
+        run: |
+          pwsh -ExecutionPolicy Bypass -File tools/generate_code_index.ps1
+
+      - name: Generate SYMBOL_INDEX.md
+        shell: pwsh
+        run: |
+          pwsh -ExecutionPolicy Bypass -File tools/generate_symbol_index.ps1
+
+      - name: Commit changes (if any)
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CODE_INDEX.md SYMBOL_INDEX.md
+          if (git diff --cached --quiet) {
+            Write-Host "No index changes."
+          } else {
+            git commit -m "chore: update code/symbol index"
+            git push
+          }
