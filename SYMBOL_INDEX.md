@@ -1,5 +1,5 @@
-# SYMBOL_INDEX.md
-### fourMelds – Symbol Index (auto-generated)
+﻿# SYMBOL_INDEX.md
+### fourMelds ??Symbol Index (auto-generated)
 
 > Do not edit manually. Run 	ools/generate_symbol_index.ps1 to regenerate.
 

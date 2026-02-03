@@ -1,5 +1,5 @@
-# CODE_INDEX.md
-### fourMelds – Runtime Code Index (auto-generated)
+﻿# CODE_INDEX.md
+### fourMelds ??Runtime Code Index (auto-generated)
 
 > Do not edit manually. Run 	ools/generate_code_index.ps1 to regenerate.
 
