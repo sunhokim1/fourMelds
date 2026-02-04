@@ -97,21 +97,6 @@ This file is a lightweight index for:
 
 ---
 
-## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/SuitType.cs
-- Namespace: FourMelds.Combat
-- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/SuitType.cs
-
-### Types
-- public enum SuitType
-
-### Members (methods)
-- (none)
-
-### Members (properties)
-- (none)
-
----
-
 ## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/TurnIndex.cs
 - Namespace: FourMelds.Combat
 - Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/TurnIndex.cs
@@ -307,7 +292,7 @@ This file is a lightweight index for:
 ### Members (properties)
 - public int Index { ... }
 - public MeldType MeldType { ... }
-- public SuitType Suit { ... }
+- public MahjongSuit Suit { ... }
 
 ---
 
@@ -395,6 +380,83 @@ This file is a lightweight index for:
 
 ### Members (methods)
 - (none)
+
+### Members (properties)
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/RuntimeState/CombatState.cs
+- Namespace: FourMelds.Combat
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/RuntimeState/CombatState.cs
+
+### Types
+- public class CombatState
+
+### Members (methods)
+- public void ApplyEnemyDamage(int damage)
+- public void ApplyPlayerHeal(int amount)
+
+### Members (properties)
+- public int PlayerHP { ... }
+- public int EnemyHP { ... }
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/AttackResultApplier.cs
+- Namespace: FourMelds.Combat.TurnIntegration
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/AttackResultApplier.cs
+
+### Types
+- public class AttackResultApplier
+
+### Members (methods)
+- public void Apply(CombatState combatState, in AttackResult result)
+
+### Members (properties)
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/TurnAttackContextBuilder.cs
+- Namespace: FourMelds.Combat.TurnIntegration
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/TurnAttackContextBuilder.cs
+
+### Types
+- public class TurnAttackContextBuilder
+
+### Members (methods)
+- public AttackContext Build(TurnState turnState, CombatState combatState)
+
+### Members (properties)
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/TurnEndAttackExecutor.cs
+- Namespace: FourMelds.Combat.TurnIntegration
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/TurnEndAttackExecutor.cs
+
+### Types
+- public class TurnEndAttackExecutor
+
+### Members (methods)
+- public AttackResult Execute(in AttackContext ctx)
+
+### Members (properties)
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/TurnLoopController.cs
+- Namespace: FourMelds.Combat
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnLoopController.cs
+
+### Types
+- public class TurnLoopController
+
+### Members (methods)
+- public void OnClick_BuildDone()
 
 ### Members (properties)
 - (none)
@@ -509,12 +571,12 @@ This file is a lightweight index for:
 
 ---
 
-## Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnAttackTestRunner.cs
-- Namespace: FourMelds.Combat
-- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnAttackTestRunner.cs
+## Assets/_Project/01_Scripts/Runtime/Core/Suits/MahjongSuit.cs
+- Namespace: FourMelds.Core.Suits
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Suits/MahjongSuit.cs
 
 ### Types
-- public class TurnAttackTestRunner
+- public enum MahjongSuit
 
 ### Members (methods)
 - (none)
@@ -525,7 +587,7 @@ This file is a lightweight index for:
 ---
 
 ## Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnPhase.cs
-- Namespace: Project.Core.Turn
+- Namespace: FourMelds.Core.Turn
 - Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnPhase.cs
 
 ### Types
@@ -565,12 +627,17 @@ This file is a lightweight index for:
 - public class TurnState
 
 ### Members (methods)
+- public void SetPhase(TurnPhase phase)
+- public void AdvanceTurn()
 - public int CreateMeld(MeldType type, int[] tiles, bool fixedNow = false)
 - public bool TryRemoveTile(int tileId)
 - public int CountOf(int tileId)
+- public void ClearAllHandTiles()
+- public void ClearAllMelds(bool resetMeldId = true)
 
 ### Members (properties)
-- (none)
+- public TurnPhase Phase { ... }
+- public int TurnIndex { ... }
 
 ---
 
@@ -685,21 +752,6 @@ This file is a lightweight index for:
 
 ### Types
 - public class MeldCandidateCalculator
-
-### Members (methods)
-- (none)
-
-### Members (properties)
-- (none)
-
----
-
-## Assets/_Project/01_Scripts/Runtime/Tiles/SuitType.cs
-- Namespace: Project.Core.Tiles
-- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/SuitType.cs
-
-### Types
-- public enum SuitType
 
 ### Members (methods)
 - (none)
