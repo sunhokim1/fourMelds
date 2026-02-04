@@ -15,6 +15,312 @@ This file is a lightweight index for:
 
 ---
 
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/AttackContext.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/AttackContext.cs
+
+### Types
+- (none)
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- public TurnIndex TurnIndex { ... }
+- public PlayerStateSnapshot Player { ... }
+- public EnemyStateSnapshot Enemy { ... }
+- public bool HasHead { ... }
+- public int MeldCount { ... }
+- public IReadOnlyList<MeldSnapshot> Melds { ... }
+- public int BaseDamage { ... }
+- public SuitSummary Suits { ... }
+- public IReadOnlyList<IYakuEffect> YakuEffects { ... }
+- public IReadOnlyList<IRelicEffect> RelicEffects { ... }
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/SuitType.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/SuitType.cs
+
+### Types
+- public enum SuitType
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/TurnIndex.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/TurnIndex.cs
+
+### Types
+- (none)
+
+### Members (methods)
+
+- public override string ToString() => Value.ToString();
+### Members (properties)
+
+- public int Value { ... }
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Effects/IRelicEffect.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Effects/IRelicEffect.cs
+
+### Types
+- public interface IRelicEffect
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Effects/IYakuEffect.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Effects/IYakuEffect.cs
+
+### Types
+- public interface IYakuEffect
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Effects/ModifyMode.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Effects/ModifyMode.cs
+
+### Types
+- public enum ModifyMode
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Effects/Relic_ManzuMeldBonus.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Effects/Relic_ManzuMeldBonus.cs
+
+### Types
+- public sealed class Relic_ManzuMeldBonus : IRelicEffect
+
+### Members (methods)
+
+- public bool IsActive(in AttackContext ctx) => true;
+### Members (properties)
+
+- public string Id => "relic.manzu_meld_bonus";
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/AttackMutableState.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/AttackMutableState.cs
+
+### Types
+- public sealed class AttackMutableState
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/BaseDamageStep.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/BaseDamageStep.cs
+
+### Types
+- public sealed class BaseDamageStep : IDamageStep
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- public string Id => "step.base";
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/ClampStep.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/ClampStep.cs
+
+### Types
+- public sealed class ClampStep : IDamageStep
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- public string Id => "step.clamp";
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/DamagePipeline.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/DamagePipeline.cs
+
+### Types
+- public sealed class DamagePipeline
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/IDamageStep.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/IDamageStep.cs
+
+### Types
+- public interface IDamageStep
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/MeldDamageComponent.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/MeldDamageComponent.cs
+
+### Types
+- public sealed class MeldDamageComponent
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- public int Index { ... }
+- public MeldType MeldType { ... }
+- public SuitType Suit { ... }
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/RelicStep.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/RelicStep.cs
+
+### Types
+- public sealed class RelicStep : IDamageStep
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- public string Id => "step.relic";
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/SuitDamageStep.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/SuitDamageStep.cs
+
+### Types
+- public sealed class SuitDamageStep : IDamageStep
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- public string Id => "step.suit";
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/YakuStep.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/YakuStep.cs
+
+### Types
+- public sealed class YakuStep : IDamageStep
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- public string Id => "step.yaku";
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Result/SideEffectType.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Result/SideEffectType.cs
+
+### Types
+- public enum SideEffectType
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Compat/IsExternalInit.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Compat/IsExternalInit.cs
+
+### Types
+- internal sealed class IsExternalInit { }
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
 ## Assets/_Project/01_Scripts/Runtime/Core/Action/Execute/DummyActionExecutionService.cs
 - Namespace: $nsName
 - Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Action/Execute/DummyActionExecutionService.cs
@@ -108,6 +414,23 @@ This file is a lightweight index for:
 
 ### Types
 - public enum MeldType
+
+### Members (methods)
+
+- (none)
+
+### Members (properties)
+
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnAttackTestRunner.cs
+- Namespace: $nsName
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnAttackTestRunner.cs
+
+### Types
+- public sealed class TurnAttackTestRunner : MonoBehaviour
 
 ### Members (methods)
 
