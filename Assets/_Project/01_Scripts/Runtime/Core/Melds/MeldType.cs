@@ -4,6 +4,6 @@ namespace Project.Core.Melds
     {
         Shuntsu,
         Koutsu,
-        Kan
+        Kantsu
     }
 }
