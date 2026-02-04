@@ -4,8 +4,8 @@
 > Do not edit manually. Run 	ools/generate_code_index.ps1 to regenerate.
 
 - Runtime root: Assets/_Project/01_Scripts/Runtime
-- Runtime abs : C:/Users/srrsr/OneDrive/바탕 화면/FinalProject/fourMelds/Assets/_Project/01_Scripts/Runtime
-- Out file    : C:/Users/srrsr/OneDrive/바탕 화면/FinalProject/fourMelds/CODE_INDEX.md
+- Runtime abs : D:/a/fourMelds/fourMelds/Assets/_Project/01_Scripts/Runtime
+- Out file    : D:/a/fourMelds/fourMelds/CODE_INDEX.md
 - Raw base    : https://raw.githubusercontent.com/sunhokim1/fourMelds/main/
 
 ---
