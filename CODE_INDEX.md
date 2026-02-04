@@ -25,6 +25,9 @@
 - Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/SuitSummary.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/SuitSummary.cs
 
+- Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/SuitType.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/SuitType.cs
+
 - Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/TurnIndex.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Context/TurnIndex.cs
 
@@ -82,21 +85,6 @@
 - Assets/_Project/01_Scripts/Runtime/Combat/Damage/Result/SideEffectType.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Result/SideEffectType.cs
 
-- Assets/_Project/01_Scripts/Runtime/Combat/RuntimeState/CombatState.cs
-  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/RuntimeState/CombatState.cs
-
-- Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/AttackResultApplier.cs
-  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/AttackResultApplier.cs
-
-- Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/TurnAttackContextBuilder.cs
-  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/TurnAttackContextBuilder.cs
-
-- Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/TurnEndAttackExecutor.cs
-  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnIntegration/TurnEndAttackExecutor.cs
-
-- Assets/_Project/01_Scripts/Runtime/Combat/TurnLoopController.cs
-  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnLoopController.cs
-
 - Assets/_Project/01_Scripts/Runtime/Compat/IsExternalInit.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Compat/IsExternalInit.cs
 
@@ -118,8 +106,8 @@
 - Assets/_Project/01_Scripts/Runtime/Core/Melds/MeldType.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Melds/MeldType.cs
 
-- Assets/_Project/01_Scripts/Runtime/Core/Suits/MahjongSuit.cs
-  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Suits/MahjongSuit.cs
+- Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnAttackTestRunner.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnAttackTestRunner.cs
 
 - Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnPhase.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Core/Turn/TurnPhase.cs
@@ -153,6 +141,9 @@
 
 - Assets/_Project/01_Scripts/Runtime/Tiles/MeldCandidateCalculator.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/MeldCandidateCalculator.cs
+
+- Assets/_Project/01_Scripts/Runtime/Tiles/SuitType.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/SuitType.cs
 
 - Assets/_Project/01_Scripts/Runtime/Tiles/TileId.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/TileId.cs
