@@ -1,3 +1,4 @@
+using FourMelds.Core.Suits;
 using Project.Core.Melds;
 
 namespace FourMelds.Combat
@@ -10,13 +11,13 @@ namespace FourMelds.Combat
     {
         public int Index { get; }
         public MeldType MeldType { get; }
-        public SuitType Suit { get; }
+        public MahjongSuit Suit { get; }
 
         public int Base;
         public int Bonus;
         public float Mult;
 
-        public MeldDamageComponent(int index, MeldType meldType, SuitType suit, int baseValue)
+        public MeldDamageComponent(int index, MeldType meldType, MahjongSuit suit, int baseValue)
         {
             Index = index;
             MeldType = meldType;

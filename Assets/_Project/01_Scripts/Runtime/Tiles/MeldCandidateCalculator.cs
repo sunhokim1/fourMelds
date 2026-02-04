@@ -1,3 +1,4 @@
+using FourMelds.Core.Suits;
 using System.Collections.Generic;
 
 namespace Project.Core.Tiles
@@ -21,7 +22,7 @@ namespace Project.Core.Tiles
             return result;
         }
 
-        private static void AddIfValid(List<MeldCandidate> list, SuitType suit, int startRank)
+        private static void AddIfValid(List<MeldCandidate> list, MahjongSuit suit, int startRank)
         {
             int a = startRank;
             int b = startRank + 1;

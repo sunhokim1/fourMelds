@@ -1,10 +1,11 @@
 using Project.Core.Melds;
+using FourMelds.Core.Suits;
 
 namespace FourMelds.Combat
 {
     public sealed record MeldSnapshot(
         MeldType Type,
-        SuitType Suit,
+        MahjongSuit Suit,
         bool IsFixed
     );
 }

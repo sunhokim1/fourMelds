@@ -5,6 +5,7 @@ using Project.Core.Action.Query;
 using Project.Core.Action.Execute;
 using Project.UI.Models;
 using System.Linq;
+using FourMelds.Core.Turn;
 
 public class ActionMenuController : MonoBehaviour, IActionRequestSink
 {
@@ -13,8 +14,8 @@ public class ActionMenuController : MonoBehaviour, IActionRequestSink
     [SerializeField] private MeldSlotsView meldSlotsView;
     private TurnState _turnState;
     private IActionExecutionService _execService;
-
     private IActionQueryService _queryService;
+    public TurnState TurnState => _turnState;
 
     private void Awake()
     {
@@ -45,10 +46,10 @@ public class ActionMenuController : MonoBehaviour, IActionRequestSink
     public void Handle(ActionRequest request)
     {
         var snapshot = new TurnSnapshot(
-            TurnPhase.Action,
+            TurnPhase.Build,
             turnIndex: 1,
             handTiles: _turnState.HandTiles,
-            meldIds: new int[0]
+            meldIds: _turnState.Melds.Select(m => m.MeldId).ToArray()
         );
 
         var menu = _queryService.Query(request, snapshot);
