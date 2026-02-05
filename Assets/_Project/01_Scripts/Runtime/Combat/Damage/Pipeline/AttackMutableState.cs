@@ -16,8 +16,12 @@ namespace FourMelds.Combat
 
         public readonly List<DamageModifier> Modifiers = new();
         public readonly List<AttackSideEffect> SideEffects = new();
+        public readonly List<DamageLogEntry> Logs = new();
+        public void AddLog(string stepId, int before, int after, string reason)
+            => Logs.Add(new DamageLogEntry(stepId, before, after, reason));
 
-        public int EvaluateFinalDamage()
+
+        internal int EvaluateFinalDamage()
         {
             int sum = 0;
             for (int i = 0; i < MeldComponents.Count; i++)
@@ -26,6 +30,7 @@ namespace FourMelds.Combat
             float v = (sum + GlobalBonus) * GlobalMult;
             return (int)v;
         }
+
 
         public int GetFinalDamage()
         {

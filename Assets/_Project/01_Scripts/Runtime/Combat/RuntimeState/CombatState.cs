@@ -1,4 +1,4 @@
-// Assets/_Project/01_Scripts/Runtime/Combat/CombatState.cs
+// Assets/_Project/01_Scripts/Runtime/Combat/RuntimeState/CombatState.cs
 
 namespace FourMelds.Combat
 {
@@ -18,6 +18,13 @@ namespace FourMelds.Combat
             if (damage < 0) damage = 0;
             EnemyHP -= damage;
             if (EnemyHP < 0) EnemyHP = 0;
+        }
+
+        public void ApplyPlayerDamage(int damage)
+        {
+            if (damage < 0) damage = 0;
+            PlayerHP -= damage;
+            if (PlayerHP < 0) PlayerHP = 0;
         }
 
         public void ApplyPlayerHeal(int amount)

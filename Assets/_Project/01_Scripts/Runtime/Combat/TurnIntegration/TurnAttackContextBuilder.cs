@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using Project.Core.Turn;
 using FourMelds.Core.Suits;
@@ -39,13 +39,10 @@ namespace FourMelds.Combat.TurnIntegration
                     continue;
                 }
 
-                int firstTile = 0;
+                var tiles = m.Tiles ?? Array.Empty<int>();
+                int firstTile = (tiles.Length > 0) ? tiles[0] : 0;
 
-                // tiles πËø≠¿Ã null¿œ ºˆ ¿÷¿∏¥œ øœ¿¸ πÊæÓ
-                var tiles = m.Tiles;
-                if (tiles != null && tiles.Length > 0)
-                    firstTile = tiles[0];
-                else
+                if (tiles.Length == 0)
                     Debug.LogWarning($"[CTX] Meld tiles null/empty. meldId={m.MeldId} type={m.Type}");
 
                 var suit = GuessSuitFromTileId(firstTile);
@@ -53,18 +50,23 @@ namespace FourMelds.Combat.TurnIntegration
                 meldSnapshots.Add(new MeldSnapshot(
                     Type: m.Type,
                     Suit: suit,
-                    IsFixed: m.IsFixed
+                    IsFixed: m.IsFixed,
+                    Tiles: tiles
                 ));
             }
 
             int meldCount = meldSnapshots.Count;
             int baseDamage = meldCount * 5;
 
+            // ‚úÖ Î®∏Î¶¨ ÌÉÄÏùº: TurnStateÏóêÏÑú Í∞ÄÏ†∏Ïò®Îã§.
+            int headTileId = turnState.HeadTileId;
+
             return new AttackContext(
                 turnIndex: new TurnIndex(GetTurnIndexSafe(turnState)),
                 player: PlayerStateSnapshot.FromHp(combatState.PlayerHP),
                 enemy: EnemyStateSnapshot.FromHp(combatState.EnemyHP),
-                hasHead: true,
+                headTileId: headTileId,
+                hasHead: headTileId != 0,     // 0Ïù¥Î©¥ Î®∏Î¶¨ ÏóÜÏùå Ï≤òÎ¶¨
                 meldCount: meldCount,
                 melds: meldSnapshots,
                 baseDamage: baseDamage,
@@ -76,12 +78,8 @@ namespace FourMelds.Combat.TurnIntegration
 
         private static int GetTurnIndexSafe(TurnState turnState)
         {
-            // TurnStateø° TurnIndex∞° æ¯¿ª ºˆµµ ¿÷¿∏¥œ,
-            // ¿œ¥‹ 1∑Œ ∞Ì¡§ (Day3).
-            // ≥™¡ﬂø° TurnStateø° TurnIndex ≥÷¿∏∏È ø©±‚ ¡¶∞≈.
             try
             {
-                // ∏∏æ‡ TurnStateø° TurnIndex∞° ¿÷¿∏∏È ªÁøÎ
                 var prop = turnState.GetType().GetProperty("TurnIndex");
                 if (prop != null && prop.PropertyType == typeof(int))
                     return (int)prop.GetValue(turnState);

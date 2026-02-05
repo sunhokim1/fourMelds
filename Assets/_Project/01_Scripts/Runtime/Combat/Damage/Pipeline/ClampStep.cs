@@ -1,4 +1,4 @@
-namespace FourMelds.Combat
+﻿namespace FourMelds.Combat
 {
     public sealed class ClampStep : IDamageStep
     {
@@ -6,7 +6,7 @@ namespace FourMelds.Combat
 
         public void Apply(in AttackContext ctx, AttackMutableState state)
         {
-            int v = state.EvaluateFinalDamage();
+            int v = state.GetFinalDamage();
 
             if (v < 0) v = 0;
             if (v > 999) v = 999;

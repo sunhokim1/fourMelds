@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System;
 
 namespace FourMelds.Combat
 {
@@ -8,25 +8,35 @@ namespace FourMelds.Combat
 
         public void Apply(in AttackContext ctx, AttackMutableState state)
         {
-            if (ctx.YakuEffects == null || ctx.YakuEffects.Count == 0)
+            var list = ctx.YakuEffects;
+            if (list == null || list.Count == 0)
                 return;
 
-            int appliedCount = 0;
+            int before = state.GetFinalDamage();
 
-            for (int i = 0; i < ctx.YakuEffects.Count; i++)
+            for (int i = 0; i < list.Count; i++)
             {
-                var yaku = ctx.YakuEffects[i];
-                if (yaku == null) continue;
+                var y = list[i];
+                if (y == null) continue;
 
-                if (!yaku.IsActive(ctx)) continue;
-
-                yaku.Apply(ctx, state);
-                appliedCount++;
+                // ì¸í„°íŽ˜ì´ìŠ¤ì— IsActiveê°€ ìžˆìœ¼ë©´ ì´ ë°©ì‹
+                // ì—†ìœ¼ë©´ y ë‚´ë¶€ì—ì„œ ìŠ¤ìŠ¤ë¡œ ê²€ì‚¬í•˜ë„ë¡ Applyì—ì„œ ì²˜ë¦¬í•´ë„ ë¨.
+                try
+                {
+                    // IsActiveê°€ ì—†ìœ¼ë©´ ì—¬ê¸°ì„œ ì»´íŒŒì¼ ì—ëŸ¬ë‚  ìˆ˜ ìžˆìŒ
+                    if (y.IsActive(in ctx))
+                        y.Apply(in ctx, state);
+                }
+                catch (Exception)
+                {
+                    // ê°œë°œ ì¤‘ì—” ì¡°ìš©ížˆ ë„˜ê¸°ì§€ ë§ê³  ë¡œê·¸ ì°ëŠ” ê²Œ ë§žì§€ë§Œ,
+                    // ì§€ê¸ˆì€ íŒŒì´í”„ë¼ì¸ ì•ˆì •ì´ ìš°ì„ ì´ë¼ ìµœì†Œ ë°©ì–´.
+                }
             }
 
-            // ·Î±×´Â DamagePipeline¿¡¼­ before/after·Î ÂïÈ÷°í,
-            // ¿©±â¼± ¼öÄ¡º¯°æÀÌ ¾ø´õ¶óµµ "¹º°¡ Àû¿ëµÊ"À» ³²±â°í ½ÍÀ¸¸é
-            // state¿¡ º°µµ µð¹ö±× ¸Þ¸ð ¸®½ºÆ®¸¦ Ãß°¡ÇÏ´Â ¹æ½ÄÀÌ Day 3~4¿¡¼­ ÁÁÀ½.
+            int after = state.GetFinalDamage();
+            if (before != after)
+                state.AddLog(Id, before, after, "changed");
         }
     }
 }

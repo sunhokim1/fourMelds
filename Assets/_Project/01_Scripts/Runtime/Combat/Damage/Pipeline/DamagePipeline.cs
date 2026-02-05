@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace FourMelds.Combat
 {
@@ -14,7 +14,6 @@ namespace FourMelds.Combat
         public AttackResult Execute(in AttackContext ctx)
         {
             var state = new AttackMutableState();
-            var logs = new List<DamageLogEntry>();
 
             for (int i = 0; i < _steps.Count; i++)
             {
@@ -25,21 +24,23 @@ namespace FourMelds.Combat
 
                 int after = state.GetFinalDamage();
 
-                if (before != after)
+                // ✅ step.yaku는 내부에서 yaku.* 로그를 개별로 남기니까
+                // 파이프라인 단계 요약 로그는 남기지 않는다.
+                if (before != after && step.Id != "step.yaku")
                 {
-                    logs.Add(new DamageLogEntry(
+                    state.AddLog(
                         step.Id,
                         before,
                         after,
                         "changed"
-                    ));
+                    );
                 }
             }
 
             return new AttackResult(
                 state.GetFinalDamage(),
                 state.SideEffects,
-                logs
+                state.Logs
             );
         }
     }
