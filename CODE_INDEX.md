@@ -55,6 +55,9 @@
 - Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/ClampStep.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/ClampStep.cs
 
+- Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/CompressionStep.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/CompressionStep.cs
+
 - Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/DamagePipeline.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/DamagePipeline.cs
 
@@ -96,6 +99,15 @@
 
 - Assets/_Project/01_Scripts/Runtime/Combat/TurnLoopController.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/TurnLoopController.cs
+
+- Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuEffect.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuEffect.cs
+
+- Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuMeta.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuMeta.cs
+
+- Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuNames.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuNames.cs
 
 - Assets/_Project/01_Scripts/Runtime/Compat/IsExternalInit.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Compat/IsExternalInit.cs
@@ -154,8 +166,14 @@
 - Assets/_Project/01_Scripts/Runtime/Tiles/MeldCandidateCalculator.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/MeldCandidateCalculator.cs
 
+- Assets/_Project/01_Scripts/Runtime/Tiles/TileCatalogue.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/TileCatalogue.cs
+
 - Assets/_Project/01_Scripts/Runtime/Tiles/TileId.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/TileId.cs
+
+- Assets/_Project/01_Scripts/Runtime/Tiles/TilePool.cs
+  https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/TilePool.cs
 
 - Assets/_Project/01_Scripts/Runtime/UI/Controllers/ActionMenuController.cs
   https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/UI/Controllers/ActionMenuController.cs

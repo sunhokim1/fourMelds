@@ -27,6 +27,7 @@ This file is a lightweight index for:
 - public TurnIndex TurnIndex { ... }
 - public PlayerStateSnapshot Player { ... }
 - public EnemyStateSnapshot Enemy { ... }
+- public int HeadTileId { ... }
 - public bool HasHead { ... }
 - public int MeldCount { ... }
 - public IReadOnlyList<MeldSnapshot> Melds { ... }
@@ -211,7 +212,7 @@ This file is a lightweight index for:
 - public class AttackMutableState
 
 ### Members (methods)
-- public int EvaluateFinalDamage()
+- public void AddLog(string stepId, int before, int after, string reason)
 - public int GetFinalDamage()
 
 ### Members (properties)
@@ -240,6 +241,21 @@ This file is a lightweight index for:
 
 ### Types
 - public class ClampStep
+
+### Members (methods)
+- public void Apply(in AttackContext ctx, AttackMutableState state)
+
+### Members (properties)
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/CompressionStep.cs
+- Namespace: FourMelds.Combat
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Damage/Pipeline/CompressionStep.cs
+
+### Types
+- public class CompressionStep
 
 ### Members (methods)
 - public void Apply(in AttackContext ctx, AttackMutableState state)
@@ -395,6 +411,7 @@ This file is a lightweight index for:
 
 ### Members (methods)
 - public void ApplyEnemyDamage(int damage)
+- public void ApplyPlayerDamage(int damage)
 - public void ApplyPlayerHeal(int amount)
 
 ### Members (properties)
@@ -457,6 +474,64 @@ This file is a lightweight index for:
 
 ### Members (methods)
 - public void OnClick_BuildDone()
+- public void Dev_Setup_ToitoiSanankou()
+- public void Dev_Test_ToitoiSanankou()
+
+### Members (properties)
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuEffect.cs
+- Namespace: FourMelds.Combat
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuEffect.cs
+
+### Types
+- public class Yaku_Tanyao
+- public class Yaku_Toitoi
+- public class Yaku_Sanankou
+- public class Yaku_Suankou
+
+### Members (methods)
+- public bool IsActive(in AttackContext ctx)
+- public void Apply(in AttackContext ctx, AttackMutableState state)
+- public bool IsActive(in AttackContext ctx)
+- public void Apply(in AttackContext ctx, AttackMutableState state)
+- public bool IsActive(in AttackContext ctx)
+- public void Apply(in AttackContext ctx, AttackMutableState state)
+- public bool IsActive(in AttackContext ctx)
+- public void Apply(in AttackContext ctx, AttackMutableState state)
+
+### Members (properties)
+- (none)
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuMeta.cs
+- Namespace: FourMelds.Combat
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuMeta.cs
+
+### Types
+- public class YakuMetaDb
+
+### Members (methods)
+- (none)
+
+### Members (properties)
+- public string DisplayName { ... }
+- public int Order { ... }
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuNames.cs
+- Namespace: FourMelds.Combat
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Combat/Yaku/YakuNames.cs
+
+### Types
+- public class YakuNames
+
+### Members (methods)
+- (none)
 
 ### Members (properties)
 - (none)
@@ -628,16 +703,24 @@ This file is a lightweight index for:
 
 ### Members (methods)
 - public void SetPhase(TurnPhase phase)
+- public void SetHeadTile(int tileId)
+- public void AddHandTile(int tileId)
 - public void AdvanceTurn()
+- public void CleanupForNextTurn()
 - public int CreateMeld(MeldType type, int[] tiles, bool fixedNow = false)
 - public bool TryRemoveTile(int tileId)
 - public int CountOf(int tileId)
 - public void ClearAllHandTiles()
 - public void ClearAllMelds(bool resetMeldId = true)
+- public void Dev_SetHandTiles(IEnumerable<int> tiles)
+- public void Dev_AddMeld(MeldType type, int[] tiles, bool fixedNow)
+- public void Dev_SetMelds(params (MeldType type, bool fixedNow, int[] tiles)
 
 ### Members (properties)
 - public TurnPhase Phase { ... }
 - public int TurnIndex { ... }
+- public int HeadTileId { ... }
+- public TilePool Pool { ... }
 
 ---
 
@@ -761,6 +844,21 @@ This file is a lightweight index for:
 
 ---
 
+## Assets/_Project/01_Scripts/Runtime/Tiles/TileCatalogue.cs
+- Namespace: Project.Core.Tiles
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/TileCatalogue.cs
+
+### Types
+- public class TileCatalog
+
+### Members (methods)
+- (none)
+
+### Members (properties)
+- (none)
+
+---
+
 ## Assets/_Project/01_Scripts/Runtime/Tiles/TileId.cs
 - Namespace: Project.Core.Tiles
 - Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/TileId.cs
@@ -773,6 +871,23 @@ This file is a lightweight index for:
 
 ### Members (properties)
 - public int Value { ... }
+
+---
+
+## Assets/_Project/01_Scripts/Runtime/Tiles/TilePool.cs
+- Namespace: Project.Core.Tiles
+- Raw: https://raw.githubusercontent.com/sunhokim1/fourMelds/main/Assets/_Project/01_Scripts/Runtime/Tiles/TilePool.cs
+
+### Types
+- public class TilePool
+
+### Members (methods)
+- public int GetRemain(int tileId)
+- public bool TryConsume(int tileId, int count = 1)
+- public bool TryDrawRandom(Func<int, bool> predicate, out int tileId)
+
+### Members (properties)
+- (none)
 
 ---
 
