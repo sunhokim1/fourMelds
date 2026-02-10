@@ -20,3 +20,5 @@ MemoryCaptures/
 .DS_Store
 .idea/
 .vscode/
+
+.vsconfig
