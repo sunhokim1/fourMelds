@@ -13,12 +13,15 @@ public class MeldSlotsView : MonoBehaviour
     [SerializeField] private float meldSlotWidth = 220f;
     [SerializeField] private float headSlotWidth = 150f;
     [SerializeField] private float packedSpacing = 80f;
+    [SerializeField] private float headToMeldSpacing = 64f;
+    [SerializeField] private int horizontalPadding = 12;
 
     public event Action<int> OnSlotClicked;
     public event Action<int, int> OnSlotTileClicked;
     public event Action<int> OnSlotRightClicked; // ✅ 슬롯 우클릭(전체 되돌리기)
 
     private GameObject _headSlot;
+    private GameObject _headGapSpacer;
     private readonly List<GameObject> _slots = new();
 
     private void Awake()
@@ -50,6 +53,7 @@ public class MeldSlotsView : MonoBehaviour
     {
         EnsurePackedLayout();
         EnsureHeadSlot();
+        EnsureHeadGapSpacer();
         EnsureSlots(4);
 
         if (_headSlot != null)
@@ -62,11 +66,21 @@ public class MeldSlotsView : MonoBehaviour
                 headView.BindHeadTile(state.HeadTileId);
         }
 
+        if (_headGapSpacer != null)
+        {
+            if (_headGapSpacer.transform.parent != slotsRoot)
+                _headGapSpacer.transform.SetParent(slotsRoot, false);
+            _headGapSpacer.transform.SetSiblingIndex(1);
+            ApplySlotWidth(_headGapSpacer, Mathf.Max(0f, headToMeldSpacing));
+        }
+
         for (int i = 0; i < 4; i++)
         {
             var slotGo = _slots[i];
             if (slotGo != null && slotGo.transform.parent != slotsRoot)
                 slotGo.transform.SetParent(slotsRoot, false);
+            if (slotGo != null)
+                slotGo.transform.SetSiblingIndex(i + 2);
 
             var slot = slotGo.GetComponent<MeldSlotView>();
 
@@ -109,6 +123,16 @@ public class MeldSlotsView : MonoBehaviour
         ApplySlotWidth(_headSlot, headSlotWidth);
     }
 
+    private void EnsureHeadGapSpacer()
+    {
+        if (_headGapSpacer != null)
+            return;
+
+        _headGapSpacer = new GameObject("HeadGapSpacer", typeof(RectTransform), typeof(LayoutElement));
+        _headGapSpacer.transform.SetParent(slotsRoot, false);
+        ApplySlotWidth(_headGapSpacer, Mathf.Max(0f, headToMeldSpacing));
+    }
+
     private void EnsurePackedLayout()
     {
         if (slotsRoot == null)
@@ -125,6 +149,7 @@ public class MeldSlotsView : MonoBehaviour
             hlg.childControlHeight = false;
             hlg.childForceExpandWidth = false;
             hlg.childForceExpandHeight = false;
+            hlg.padding = new RectOffset(horizontalPadding, horizontalPadding, 0, 0);
         }
     }
 

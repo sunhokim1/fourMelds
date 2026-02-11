@@ -14,6 +14,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private SlotTileIconView slotTileIconPrefab;
     [SerializeField] private float tileHorizontalSpacing = 12f;
     [SerializeField] private float minRuntimeTileHorizontalSpacing = 16f;
+    [SerializeField] private float headTileHorizontalSpacing = 10f;
 
     [Header("Selection Visual (Optional)")]
     [SerializeField] private Image highlight;
@@ -40,7 +41,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
     {
         _rootImage = GetComponent<Image>();
         _outline = GetComponent<Outline>();
-        EnsureTileRootLayout();
+        EnsureTileRootLayout(isHeadSlot: false);
         ApplySelectedVisual();
     }
 
@@ -66,6 +67,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
     {
         _isHeadSlot = false;
         _slotIndex = slotIndex;
+        EnsureTileRootLayout(isHeadSlot: false);
         ClearTilesOnly();
 
         int count = tiles != null ? tiles.Count : 0;
@@ -109,6 +111,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
         _slotIndex = -1;
         _isPendingPlacement = false;
         _pendingLabel = null;
+        EnsureTileRootLayout(isHeadSlot: true);
         SetSelected(false);
         ClearTilesOnly();
 
@@ -215,7 +218,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
         return icon;
     }
 
-    private void EnsureTileRootLayout()
+    private void EnsureTileRootLayout(bool isHeadSlot)
     {
         if (tileRoot == null)
             return;
@@ -224,8 +227,10 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
         if (hlg == null)
             hlg = tileRoot.gameObject.AddComponent<HorizontalLayoutGroup>();
 
-        hlg.spacing = Mathf.Max(tileHorizontalSpacing, minRuntimeTileHorizontalSpacing);
-        hlg.childAlignment = TextAnchor.MiddleLeft;
+        hlg.spacing = isHeadSlot
+            ? Mathf.Max(headTileHorizontalSpacing, 0f)
+            : Mathf.Max(tileHorizontalSpacing, minRuntimeTileHorizontalSpacing);
+        hlg.childAlignment = isHeadSlot ? TextAnchor.MiddleCenter : TextAnchor.MiddleLeft;
         hlg.childControlWidth = false;
         hlg.childControlHeight = false;
         hlg.childForceExpandWidth = false;

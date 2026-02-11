@@ -1427,6 +1427,14 @@ MonoBehaviour:
   panelRoot: {fileID: 1326979667}
   contentRoot: {fileID: 1177003130}
   buttonPrefab: {fileID: 2497915544416262173, guid: def13d62ef93f2d46bc50a83116cab77, type: 3}
+  cardFrameSprite: {fileID: 2950890645755299056, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
+  nameBannerSprite: {fileID: 3422855556751278097, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
+  artFrameSprite: {fileID: -5361317659871636078, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
+  descriptionPanelSprite: {fileID: -9100160955208833952, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
+  rarityGemCommonSprite: {fileID: 7034078855009949703, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
+  rarityGemRareSprite: {fileID: 7977566702449407883, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
+  rarityGemEpicSprite: {fileID: -813250415293670948, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
+  rarityGemLegendarySprite: {fileID: 1019373083652436346, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
   handTilesView: {fileID: 0}
   actionMenuController: {fileID: 0}
 --- !u!114 &1326979670

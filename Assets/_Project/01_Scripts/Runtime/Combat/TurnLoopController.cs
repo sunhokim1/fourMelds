@@ -59,6 +59,8 @@ namespace FourMelds.Combat
         private Vector2 _baseMeldShownPos;
         private Vector2 _baseCardShownPos;
         private bool _phaseSwapInitialized;
+        private int _lastScreenWidth;
+        private int _lastScreenHeight;
 
         private void Awake()
         {
@@ -125,6 +127,8 @@ namespace FourMelds.Combat
             Canvas.ForceUpdateCanvases();
 
             InitializePhaseSwapAnchors();
+            _lastScreenWidth = Screen.width;
+            _lastScreenHeight = Screen.height;
 
             // Day4: 턴 시작 트리거
             _turnState.SetPhase(TurnPhase.Draw);
@@ -373,6 +377,8 @@ namespace FourMelds.Combat
             if (_turnState == null)
                 return;
 
+            MaybeRefreshPhaseSwapAnchors();
+
             bool isCardUse = _turnState.Phase == TurnPhase.CardUse;
 
             AlignCardPanelToMeldPanel();
@@ -405,6 +411,29 @@ namespace FourMelds.Combat
         {
             if (go != null)
                 go.SetActive(active);
+        }
+
+        private void MaybeRefreshPhaseSwapAnchors()
+        {
+            if (!_animatePhaseSwap)
+                return;
+
+            int width = Screen.width;
+            int height = Screen.height;
+            bool screenChanged = width != _lastScreenWidth || height != _lastScreenHeight;
+            bool missingRects = _cardPanelRect == null || _meldPanelRect == null;
+
+            if (!screenChanged && !missingRects)
+                return;
+
+            _lastScreenWidth = width;
+            _lastScreenHeight = height;
+            _phaseShownAnchorsCaptured = false;
+
+            InitializePhaseSwapAnchors();
+
+            if (_turnState != null && _phaseSwapInitialized)
+                SnapPhasePanelsImmediately(_turnState.Phase == TurnPhase.CardUse);
         }
 
         private void InitializePhaseSwapAnchors()
