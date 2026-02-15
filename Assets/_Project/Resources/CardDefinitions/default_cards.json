@@ -1,0 +1,47 @@
+{
+  "cards": [
+    {
+      "id": "draw.random5",
+      "rarity": 2,
+      "suitTheme": 0,
+      "action": "draw",
+      "suit": "random",
+      "count": 5,
+      "preferHonorFirst": true
+    },
+    {
+      "id": "draw.manzu3",
+      "rarity": 1,
+      "suitTheme": 1,
+      "action": "draw",
+      "suit": "manzu",
+      "count": 3
+    },
+    {
+      "id": "draw.honor1",
+      "rarity": 1,
+      "suitTheme": 4,
+      "action": "draw",
+      "suit": "honor",
+      "count": 1
+    },
+    {
+      "id": "exchange.2",
+      "rarity": 2,
+      "suitTheme": 0,
+      "action": "exchange",
+      "suit": "random",
+      "count": 2
+    },
+    {
+      "id": "draw.tanyao4",
+      "rarity": 1,
+      "suitTheme": 0,
+      "action": "draw",
+      "suit": "number",
+      "count": 4,
+      "minRank": 2,
+      "maxRank": 8
+    }
+  ]
+}

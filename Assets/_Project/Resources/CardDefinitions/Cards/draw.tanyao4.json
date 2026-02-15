@@ -1,0 +1,10 @@
+{
+  "id": "draw.tanyao4",
+  "rarity": 1,
+  "suitTheme": 0,
+  "action": "draw",
+  "suit": "number",
+  "count": 4,
+  "minRank": 2,
+  "maxRank": 8
+}

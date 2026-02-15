@@ -735,9 +735,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FourMelds.Combat.TurnLoopController
   _actionMenu: {fileID: 2036890283}
+  _cardPanel: {fileID: 0}
+  _handTilesView: {fileID: 0}
+  _meldSlotsView: {fileID: 0}
+  _cardUseBoardRoot: {fileID: 0}
+  _buildBoardRoot: {fileID: 0}
+  _buildDoneButton: {fileID: 0}
+  _turnStatusText: {fileID: 0}
   _playerHp: 50
   _enemyHp: 60
+  _cardsPerTurn: 5
+  _startingDeckCardIndices: 
+  _animatePhaseSwap: 1
+  _phaseSwapDuration: 0.22
+  _cardPanelHiddenYOffset: -280
+  _meldPanelHiddenYOffset: -220
+  _cardPanelUsesMeldShownPosition: 1
+  _cardPanelShownOffsetFromMeld: {x: 0, y: 0}
   _initialHandSize: 8
+  _ensureAtLeastOneHonorInInitialHand: 1
 --- !u!4 &597253458
 Transform:
   m_ObjectHideFlags: 0
@@ -1338,6 +1354,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeldSlotsView
   slotsRoot: {fileID: 506134336}
   slotPrefab: {fileID: 149085134029021847, guid: 58881d858ea256a47a0d05a5a5d0db82, type: 3}
+  meldSlotWidth: 220
+  headSlotWidth: 150
+  packedSpacing: 80
+  headToMeldSpacing: 64
+  horizontalPadding: 12
 --- !u!1 &1177003129
 GameObject:
   m_ObjectHideFlags: 0
@@ -1426,7 +1447,30 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardPanelController
   panelRoot: {fileID: 1326979667}
   contentRoot: {fileID: 1177003130}
-  buttonPrefab: {fileID: 2497915544416262173, guid: def13d62ef93f2d46bc50a83116cab77, type: 3}
+  buttonPrefab: {fileID: 2497915544416262173, guid: 5eca232fcf9e4caf85628784c6d9e059, type: 3}
+  usePrefabCardSize: 1
+  cardWidth: 170
+  cardHeight: 220
+  cardSpacing: 18
+  hoverScale: 1.12
+  cardNormalColor: {r: 0.12, g: 0.16, b: 0.24, a: 0.94}
+  cardHoverColor: {r: 0.18, g: 0.24, b: 0.34, a: 0.98}
+  cardPressedColor: {r: 0.24, g: 0.3, b: 0.42, a: 1}
+  cardDisabledColor: {r: 0.1, g: 0.12, b: 0.18, a: 0.65}
+  requireDragToPlay: 1
+  dragPlayViewportTarget: {x: 0.5, y: 0.5}
+  dragPlayRadius: 660
+  dragLiftScale: 1.18
+  requireDropOutsidePanel: 1
+  outsidePanelPadding: 18
+  showDragPlayGuide: 0
+  dragPlayGuideText: "\uCE74\uB4DC\uB97C \uC5EC\uAE30\uB85C \uB4DC\uB798\uADF8"
+  dragGuideFillColor: {r: 0.22, g: 0.72, b: 1, a: 0.12}
+  dragGuideRingColor: {r: 0.62, g: 0.86, b: 1, a: 0.72}
+  dragGuideTextColor: {r: 0.9, g: 0.96, b: 1, a: 0.92}
+  dragValidColor: {r: 0.14, g: 0.5, b: 0.3, a: 0.98}
+  dragValidOutlineColor: {r: 0.66, g: 1, b: 0.78, a: 0.98}
+  dragValidScaleMultiplier: 1.3
   cardFrameSprite: {fileID: 2950890645755299056, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
   nameBannerSprite: {fileID: 3422855556751278097, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
   artFrameSprite: {fileID: -5361317659871636078, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
@@ -1435,8 +1479,9 @@ MonoBehaviour:
   rarityGemRareSprite: {fileID: 7977566702449407883, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
   rarityGemEpicSprite: {fileID: -813250415293670948, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
   rarityGemLegendarySprite: {fileID: 1019373083652436346, guid: d833bd5c3a1b56c44bc1bcae53424cec, type: 3}
-  handTilesView: {fileID: 0}
-  actionMenuController: {fileID: 0}
+  forceRuntimePanelPlacement: 0
+  panelSize: {x: 980, y: 280}
+  panelAnchoredPosition: {x: 420, y: 18}
 --- !u!114 &1326979670
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1692,6 +1737,16 @@ MonoBehaviour:
   souzuRoot: {fileID: 1392361885}
   pinzuRoot: {fileID: 1356366663}
   honorRoot: {fileID: 503143653}
+  tileCellSize: {x: 56, y: 84}
+  tileSpacing: 12
+  lineSpacing: 14
+  tilesPerLine: 5
+  rowSpacing: 14
+  rowPaddingX: 6
+  rowPaddingY: 8
+  showRowBackground: 1
+  rowBackgroundColor: {r: 0, g: 0, b: 0, a: 0.12}
+  forceTopLeftFill: 1
 --- !u!1 &2036890281
 GameObject:
   m_ObjectHideFlags: 0

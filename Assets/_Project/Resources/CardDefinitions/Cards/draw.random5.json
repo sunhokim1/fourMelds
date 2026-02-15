@@ -1,0 +1,9 @@
+{
+  "id": "draw.random5",
+  "rarity": 2,
+  "suitTheme": 0,
+  "action": "draw",
+  "suit": "random",
+  "count": 5,
+  "preferHonorFirst": true
+}

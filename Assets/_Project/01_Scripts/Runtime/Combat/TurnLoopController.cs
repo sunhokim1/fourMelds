@@ -55,6 +55,7 @@ namespace FourMelds.Combat
         private Vector2 _meldPanelShownPos;
         private Vector2 _meldPanelHiddenPos;
         private Coroutine _phaseSwapRoutine;
+        private Coroutine _deferredAdvanceRoutine;
         private bool _phaseShownAnchorsCaptured;
         private Vector2 _baseMeldShownPos;
         private Vector2 _baseCardShownPos;
@@ -118,6 +119,12 @@ namespace FourMelds.Combat
                 StopCoroutine(_phaseSwapRoutine);
                 _phaseSwapRoutine = null;
             }
+
+            if (_deferredAdvanceRoutine != null)
+            {
+                StopCoroutine(_deferredAdvanceRoutine);
+                _deferredAdvanceRoutine = null;
+            }
         }
 
         private IEnumerator BeginTurnLoopAfterUiLayout()
@@ -132,7 +139,7 @@ namespace FourMelds.Combat
 
             // Day4: 턴 시작 트리거
             _turnState.SetPhase(TurnPhase.Draw);
-            Advance();
+            ScheduleAdvance();
         }
 
         // UI 버튼(= Build 완료)에서 호출
@@ -161,7 +168,7 @@ namespace FourMelds.Combat
             // "지금 상태는 Build다. Build에서 해야 할 다음 행동(ResolvePlayer)을 실행해라"
             _turnState.SetPhase(TurnPhase.Build);
             RefreshTurnStatus();
-            Advance();
+            ScheduleAdvance();
         }
 
         private DamagePipeline CreatePipeline()
@@ -202,6 +209,28 @@ namespace FourMelds.Combat
                     StartNextTurn();
                     break;
             }
+        }
+
+        private void ScheduleAdvance()
+        {
+            if (!isActiveAndEnabled || _turnState == null)
+                return;
+
+            if (_deferredAdvanceRoutine != null)
+                return;
+
+            _deferredAdvanceRoutine = StartCoroutine(AdvanceNextFrame());
+        }
+
+        private IEnumerator AdvanceNextFrame()
+        {
+            yield return null;
+            _deferredAdvanceRoutine = null;
+
+            if (!isActiveAndEnabled || _turnState == null)
+                yield break;
+
+            Advance();
         }
 
         /// <summary>
@@ -298,7 +327,7 @@ namespace FourMelds.Combat
 
             Debug.Log($"[TURN] Resolve done. Damage={result.FinalDamage}, EnemyHP(after)={_combatState.EnemyHP}");
 
-            Advance(); // Resolve -> Enemy
+            ScheduleAdvance(); // Resolve -> Enemy
         }
 
         private void EnterEnemy()
@@ -309,7 +338,7 @@ namespace FourMelds.Combat
             UpdatePhaseBoardState();
             UpdateCardPanelState();
             RefreshTurnStatus();
-            Advance(); // Day4: 적 턴은 자동 진행
+            ScheduleAdvance(); // Day4: 적 턴은 자동 진행
         }
 
         private void RunEnemy()
@@ -326,7 +355,7 @@ namespace FourMelds.Combat
             UpdatePhaseBoardState();
             UpdateCardPanelState();
             RefreshTurnStatus();
-            Advance();
+            ScheduleAdvance();
         }
 
         private void StartNextTurn()
@@ -339,7 +368,7 @@ namespace FourMelds.Combat
 
             Debug.Log($"[TURN] Cleanup -> NextTurn. Turn={_turnState.TurnIndex}");
 
-            Advance(); // -> Draw
+            ScheduleAdvance(); // -> Draw
         }
 
         private void SetBuildDoneInteractable(bool enabled)

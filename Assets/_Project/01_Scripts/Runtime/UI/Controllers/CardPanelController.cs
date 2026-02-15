@@ -15,8 +15,9 @@ public sealed class CardPanelController : MonoBehaviour
     [SerializeField] private Button buttonPrefab;
 
     [Header("Card Look")]
-    [SerializeField] private float cardWidth = 170f;
-    [SerializeField] private float cardHeight = 220f;
+    [SerializeField] private bool usePrefabCardSize = true;
+    [SerializeField] private float cardWidth = 180f;
+    [SerializeField] private float cardHeight = 240f;
     [SerializeField] private float cardSpacing = 18f;
     [SerializeField] private float hoverScale = 1.12f;
     [SerializeField] private Color cardNormalColor = new Color(0.12f, 0.16f, 0.24f, 0.94f);
@@ -136,22 +137,19 @@ public sealed class CardPanelController : MonoBehaviour
         {
             int handIndex = i;
             int registryIndex = handCardIndices[i];
+            ICardEffect card = registryIndex >= 0 && registryIndex < cards.Count
+                ? cards[registryIndex]
+                : null;
 
             var btn = AcquireButton();
             if (btn == null)
                 continue;
 
-            string name = registryIndex >= 0 && registryIndex < cards.Count
-                ? cards[registryIndex]?.Name ?? $"Card {registryIndex}"
-                : $"Card {registryIndex}";
-
-            string desc = registryIndex >= 0 && registryIndex < cards.Count
-                ? GetCardDescription(cards[registryIndex])
-                : "";
+            ResolveCardDisplayData(registryIndex, card, out string name, out string desc, out int rarityTier);
 
             btn.interactable = _isInteractable;
             ConfigureCardStyle(btn);
-            BindCardVisual(btn, name, desc);
+            BindCardVisual(btn, name, desc, rarityTier);
             ConfigurePointerAndDrag(btn, handIndex, desc);
 
             if (!requireDragToPlay)
@@ -233,28 +231,29 @@ public sealed class CardPanelController : MonoBehaviour
             return;
 
         var rt = btn.transform as RectTransform;
-        if (rt != null)
-            rt.sizeDelta = new Vector2(cardWidth, cardHeight);
+        float targetWidth = cardWidth;
+        float targetHeight = cardHeight;
+        if (usePrefabCardSize && rt != null)
+        {
+            targetWidth = rt.sizeDelta.x;
+            targetHeight = rt.sizeDelta.y;
+        }
+        else if (rt != null)
+        {
+            rt.sizeDelta = new Vector2(targetWidth, targetHeight);
+        }
 
         var le = btn.GetComponent<LayoutElement>();
         if (le == null)
             le = btn.gameObject.AddComponent<LayoutElement>();
-        le.minHeight = cardHeight;
-        le.preferredHeight = cardHeight;
+        le.minHeight = targetHeight;
+        le.preferredHeight = targetHeight;
         le.flexibleHeight = 0f;
-        le.minWidth = cardWidth;
-        le.preferredWidth = cardWidth;
+        le.minWidth = targetWidth;
+        le.preferredWidth = targetWidth;
         le.flexibleWidth = 0f;
 
-        var text = btn.GetComponentInChildren<Text>(true);
-        if (text != null)
-        {
-            text.resizeTextForBestFit = false;
-            text.fontSize = 18;
-            text.alignment = TextAnchor.UpperLeft;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
-        }
+        // Text layout/styling is authored in prefab/CardView. Do not override here.
     }
 
     private void ConfigureCardStyle(Button btn)
@@ -265,18 +264,18 @@ public sealed class CardPanelController : MonoBehaviour
         var img = btn.GetComponent<Image>();
         if (img != null)
         {
-            img.color = cardNormalColor;
             img.raycastTarget = true;
         }
 
         var colors = btn.colors;
-        colors.normalColor = cardNormalColor;
-        colors.highlightedColor = cardHoverColor;
-        colors.pressedColor = cardPressedColor;
-        colors.disabledColor = cardDisabledColor;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = Color.white;
+        colors.pressedColor = Color.white;
+        colors.disabledColor = new Color(1f, 1f, 1f, 0.55f);
         colors.colorMultiplier = 1f;
         colors.fadeDuration = 0.08f;
         btn.colors = colors;
+        btn.transition = Selectable.Transition.None;
 
         var outline = btn.GetComponent<Outline>();
         if (outline == null)
@@ -528,20 +527,52 @@ public sealed class CardPanelController : MonoBehaviour
             _tooltipRoot.gameObject.SetActive(false);
     }
 
-    private static string GetCardDescription(ICardEffect card)
+    private static void ResolveCardDisplayData(int registryIndex, ICardEffect card, out string name, out string description, out int rarityTier)
     {
-        if (card == null)
-            return "효과 없음";
+        name = card?.Name ?? $"Card {registryIndex}";
+        description = "효과 설명 없음";
+        rarityTier = 0;
 
-        return card.Id switch
+        if (CardRegistry.TryGetDefinition(registryIndex, out var def) && def != null)
         {
-            "draw.random5" => "랜덤 패 5장 드로우(자패 우선 1장)",
-            "draw.manzu3" => "만수 패 3장 드로우",
-            "draw.honor1" => "자패 1장 드로우",
-            "exchange.2" => "손패 2장 버리고 2장 다시 드로우",
-            "draw.tanyao4" => "2~8 수패 4장 드로우",
-            _ => card.Name,
-        };
+            if (!string.IsNullOrWhiteSpace(def.name))
+                name = def.name;
+            if (!string.IsNullOrWhiteSpace(def.description))
+                description = def.description;
+            rarityTier = Mathf.Clamp(def.rarity, 0, 3);
+            description = StylizeDescription(description);
+            return;
+        }
+
+        if (card != null && !string.IsNullOrWhiteSpace(card.Name))
+            description = card.Name;
+        description = StylizeDescription(description);
+    }
+
+    private static string StylizeDescription(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return text;
+
+        string styled = text;
+        styled = Highlight(styled, "만수", "#C73E3A");
+        styled = Highlight(styled, "통수", "#2F6FDB");
+        styled = Highlight(styled, "삭수", "#2E8B57");
+        styled = Highlight(styled, "자패", "#B8860B");
+        styled = Highlight(styled, "드로우", "#5B6EE1");
+        styled = Highlight(styled, "쯔모", "#5B6EE1");
+        styled = Highlight(styled, "교환", "#D97706");
+        styled = Highlight(styled, "랜덤", "#6B7280");
+        return styled;
+    }
+
+    private static string Highlight(string source, string keyword, string colorHex)
+    {
+        if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(keyword))
+            return source;
+
+        string tag = $"<color={colorHex}>{keyword}</color>";
+        return source.Replace(keyword, tag);
     }
 
     private void BeginCardDrag(Button btn, PointerEventData ped)
@@ -830,7 +861,7 @@ public sealed class CardPanelController : MonoBehaviour
 
         var img = btn.GetComponent<Image>();
         if (img != null)
-            img.color = isValidDropZone ? dragValidColor : cardHoverColor;
+            img.raycastTarget = true;
 
         var outline = btn.GetComponent<Outline>();
         if (outline != null)
@@ -946,11 +977,11 @@ public sealed class CardPanelController : MonoBehaviour
         var img = btn.GetComponent<Image>();
         if (img != null)
         {
-            img.color = hovered ? hoverColor : normalColor;
+            img.raycastTarget = true;
         }
     }
 
-    private void BindCardVisual(Button btn, string name, string desc)
+    private void BindCardVisual(Button btn, string name, string desc, int rarityTier)
     {
         if (btn == null)
             return;
@@ -975,6 +1006,7 @@ public sealed class CardPanelController : MonoBehaviour
             disabledColor: cardDisabledColor,
             dragValidColor: dragValidColor,
             dragValidOutlineColor: dragValidOutlineColor);
+        view.SetRarityTier(rarityTier);
         view.SetInteractable(_isInteractable);
         view.SetHover(false);
         view.SetDragging(dragging: false, dragValid: false);

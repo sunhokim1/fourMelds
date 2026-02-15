@@ -14,6 +14,9 @@ public sealed class CardView : MonoBehaviour
     [SerializeField] private Sprite rarityGemRareSprite;
     [SerializeField] private Sprite rarityGemEpicSprite;
     [SerializeField] private Sprite rarityGemLegendarySprite;
+    [SerializeField] private bool useRarityTint = false;
+    [Header("Typography")]
+    [SerializeField] private Font preferredTextFont;
 
     private Image _frameImage;
     private Outline _frameOutline;
@@ -30,6 +33,11 @@ public sealed class CardView : MonoBehaviour
     private bool _dragging;
     private bool _dragValid;
     private bool _interactable = true;
+    private bool _usingSimpleLayout;
+    private int _rarityTier;
+    private Graphic _simpleCardGraphic;
+    private RawImage _simpleCardRawImage;
+    private static Font _cachedJuaFont;
 
     private Color _normalColor = new Color(0.12f, 0.16f, 0.24f, 0.94f);
     private Color _hoverColor = new Color(0.18f, 0.24f, 0.34f, 0.98f);
@@ -71,17 +79,30 @@ public sealed class CardView : MonoBehaviour
         if (rootRt == null)
             return;
 
-        _contentRoot = EnsureRectChild("CardContent", rootRt);
-        _contentRoot.anchorMin = Vector2.zero;
-        _contentRoot.anchorMax = Vector2.one;
-        _contentRoot.offsetMin = new Vector2(BorderSize, BorderSize);
-        _contentRoot.offsetMax = new Vector2(-BorderSize, -BorderSize);
+        _contentRoot = EnsureRectChild("CardContent", rootRt, out bool contentCreated);
+        bool hasSimpleLayout = HasSimpleLayout(_contentRoot);
+        if (contentCreated || !hasSimpleLayout)
+        {
+            _contentRoot.anchorMin = Vector2.zero;
+            _contentRoot.anchorMax = Vector2.one;
+            _contentRoot.pivot = new Vector2(0.5f, 0.5f);
+            _contentRoot.anchoredPosition = Vector2.zero;
+            _contentRoot.offsetMin = new Vector2(BorderSize, BorderSize);
+            _contentRoot.offsetMax = new Vector2(-BorderSize, -BorderSize);
+        }
+        EnsureManualLayoutContainer(_contentRoot);
 
-        EnsureNameBanner();
-        EnsureArtFrame();
-        EnsureDescriptionPanel();
-        EnsureRarityGem();
+        _usingSimpleLayout = TryBindSimpleLayout();
+        if (!_usingSimpleLayout)
+        {
+            EnsureNameBanner();
+            EnsureArtFrame();
+            EnsureDescriptionPanel();
+            EnsureRarityGem();
+        }
+
         DisableLegacyRootText();
+        ApplyPreferredTextFonts();
         ApplySkinSprites();
 
         ApplyVisualState();
@@ -150,19 +171,12 @@ public sealed class CardView : MonoBehaviour
 
     public void SetRarityTier(int tier)
     {
-        if (_rarityGemImage == null)
-            return;
+        _rarityTier = Mathf.Clamp(tier, 0, 3);
 
-        _rarityGemImage.sprite = tier switch
-        {
-            3 => rarityGemLegendarySprite != null ? rarityGemLegendarySprite : rarityGemCommonSprite,
-            2 => rarityGemEpicSprite != null ? rarityGemEpicSprite : rarityGemCommonSprite,
-            1 => rarityGemRareSprite != null ? rarityGemRareSprite : rarityGemCommonSprite,
-            _ => rarityGemCommonSprite
-        };
+        if (_rarityGemImage != null)
+            _rarityGemImage.gameObject.SetActive(false);
 
-        _rarityGemImage.type = ShouldUseSliced(_rarityGemImage.sprite) ? Image.Type.Sliced : Image.Type.Simple;
-        _rarityGemImage.preserveAspect = true;
+        ApplyRarityVisual();
     }
 
     private void ApplyVisualState()
@@ -170,28 +184,30 @@ public sealed class CardView : MonoBehaviour
         if (_frameImage == null)
             return;
 
+        bool useArtColor = HasCustomFrameArt();
+
         if (!_interactable)
         {
-            _frameImage.color = _disabledColor;
+            _frameImage.color = useArtColor ? new Color(1f, 1f, 1f, 0.55f) : _disabledColor;
             SetOutlineColor(new Color(0.35f, 0.38f, 0.48f, 0.45f), new Vector2(1f, -1f));
             return;
         }
 
         if (_dragging && _dragValid)
         {
-            _frameImage.color = _dragValidColor;
+            _frameImage.color = useArtColor ? Color.white : _dragValidColor;
             SetOutlineColor(_dragValidOutlineColor, new Vector2(3f, -3f));
             return;
         }
 
         if (_hovered || _dragging)
         {
-            _frameImage.color = _hoverColor;
+            _frameImage.color = useArtColor ? Color.white : _hoverColor;
             SetOutlineColor(new Color(0.92f, 0.96f, 1f, 0.98f), new Vector2(2f, -2f));
             return;
         }
 
-        _frameImage.color = _normalColor;
+        _frameImage.color = useArtColor ? Color.white : _normalColor;
         SetOutlineColor(new Color(0.72f, 0.78f, 0.93f, 0.72f), new Vector2(1f, -1f));
     }
 
@@ -206,12 +222,15 @@ public sealed class CardView : MonoBehaviour
 
     private void EnsureNameBanner()
     {
-        var bannerRt = EnsureRectChild("NameBanner", _contentRoot);
-        bannerRt.anchorMin = new Vector2(0f, 1f);
-        bannerRt.anchorMax = new Vector2(1f, 1f);
-        bannerRt.pivot = new Vector2(0.5f, 1f);
-        bannerRt.anchoredPosition = Vector2.zero;
-        bannerRt.sizeDelta = new Vector2(0f, 34f);
+        var bannerRt = EnsureRectChild("NameBanner", _contentRoot, out bool created);
+        if (created)
+        {
+            bannerRt.anchorMin = new Vector2(0f, 1f);
+            bannerRt.anchorMax = new Vector2(1f, 1f);
+            bannerRt.pivot = new Vector2(0.5f, 1f);
+            bannerRt.anchoredPosition = Vector2.zero;
+            bannerRt.sizeDelta = new Vector2(0f, 34f);
+        }
 
         _nameBannerImage = EnsureImage(bannerRt.gameObject, new Color(0.20f, 0.26f, 0.40f, 0.90f));
         _nameText = EnsureTextChild(
@@ -229,24 +248,30 @@ public sealed class CardView : MonoBehaviour
 
     private void EnsureArtFrame()
     {
-        var artRt = EnsureRectChild("ArtFrame", _contentRoot);
-        artRt.anchorMin = new Vector2(0f, 1f);
-        artRt.anchorMax = new Vector2(1f, 1f);
-        artRt.pivot = new Vector2(0.5f, 1f);
-        artRt.anchoredPosition = new Vector2(0f, -40f);
-        artRt.sizeDelta = new Vector2(0f, 94f);
+        var artRt = EnsureRectChild("ArtFrame", _contentRoot, out bool created);
+        if (created)
+        {
+            artRt.anchorMin = new Vector2(0f, 1f);
+            artRt.anchorMax = new Vector2(1f, 1f);
+            artRt.pivot = new Vector2(0.5f, 1f);
+            artRt.anchoredPosition = new Vector2(0f, -40f);
+            artRt.sizeDelta = new Vector2(0f, 94f);
+        }
 
         _artFrameImage = EnsureImage(artRt.gameObject, new Color(0.10f, 0.12f, 0.16f, 0.76f));
     }
 
     private void EnsureDescriptionPanel()
     {
-        var descRt = EnsureRectChild("DescriptionPanel", _contentRoot);
-        descRt.anchorMin = new Vector2(0f, 0f);
-        descRt.anchorMax = new Vector2(1f, 0f);
-        descRt.pivot = new Vector2(0.5f, 0f);
-        descRt.anchoredPosition = new Vector2(0f, 0f);
-        descRt.sizeDelta = new Vector2(0f, 72f);
+        var descRt = EnsureRectChild("DescriptionPanel", _contentRoot, out bool created);
+        if (created)
+        {
+            descRt.anchorMin = new Vector2(0f, 0f);
+            descRt.anchorMax = new Vector2(1f, 0f);
+            descRt.pivot = new Vector2(0.5f, 0f);
+            descRt.anchoredPosition = new Vector2(0f, 0f);
+            descRt.sizeDelta = new Vector2(0f, 72f);
+        }
 
         _descriptionPanelImage = EnsureImage(descRt.gameObject, new Color(0.14f, 0.19f, 0.28f, 0.88f));
         _descriptionText = EnsureTextChild(
@@ -264,12 +289,15 @@ public sealed class CardView : MonoBehaviour
 
     private void EnsureRarityGem()
     {
-        var gemRt = EnsureRectChild("RarityGem", _contentRoot);
-        gemRt.anchorMin = new Vector2(1f, 1f);
-        gemRt.anchorMax = new Vector2(1f, 1f);
-        gemRt.pivot = new Vector2(1f, 1f);
-        gemRt.anchoredPosition = new Vector2(-6f, -6f);
-        gemRt.sizeDelta = new Vector2(16f, 16f);
+        var gemRt = EnsureRectChild("RarityGem", _contentRoot, out bool created);
+        if (created)
+        {
+            gemRt.anchorMin = new Vector2(1f, 1f);
+            gemRt.anchorMax = new Vector2(1f, 1f);
+            gemRt.pivot = new Vector2(1f, 1f);
+            gemRt.anchoredPosition = new Vector2(-6f, -6f);
+            gemRt.sizeDelta = new Vector2(16f, 16f);
+        }
 
         _rarityGemImage = EnsureImage(gemRt.gameObject, new Color(0.83f, 0.89f, 1f, 0.95f));
     }
@@ -292,14 +320,23 @@ public sealed class CardView : MonoBehaviour
 
     private static RectTransform EnsureRectChild(string name, RectTransform parent)
     {
+        return EnsureRectChild(name, parent, out _);
+    }
+
+    private static RectTransform EnsureRectChild(string name, RectTransform parent, out bool created)
+    {
         var child = parent.Find(name) as RectTransform;
         if (child != null)
+        {
+            created = false;
             return child;
+        }
 
         var go = new GameObject(name, typeof(RectTransform));
         child = go.GetComponent<RectTransform>();
         child.SetParent(parent, false);
         child.localScale = Vector3.one;
+        created = true;
         return child;
     }
 
@@ -314,13 +351,114 @@ public sealed class CardView : MonoBehaviour
         return img;
     }
 
+    private bool TryBindSimpleLayout()
+    {
+        if (_contentRoot == null)
+            return false;
+
+        var nameRt = _contentRoot.Find("NameText") as RectTransform;
+        var cardRt = _contentRoot.Find("CardImage") as RectTransform;
+        var descRt = _contentRoot.Find("DescriptionText") as RectTransform;
+
+        if (nameRt == null || cardRt == null || descRt == null)
+            return false;
+
+        _nameText = GetOrAddText(nameRt.gameObject);
+        _descriptionText = GetOrAddText(descRt.gameObject);
+        _descriptionText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        _descriptionText.verticalOverflow = VerticalWrapMode.Truncate;
+
+        _simpleCardGraphic = cardRt.GetComponent<Graphic>();
+        if (_simpleCardGraphic == null)
+            _simpleCardGraphic = EnsureImage(cardRt.gameObject, Color.white);
+
+        _simpleCardRawImage = cardRt.GetComponent<RawImage>();
+        _artFrameImage = cardRt.GetComponent<Image>();
+        _nameBannerImage = null;
+        _descriptionPanelImage = null;
+        _rarityGemImage = null;
+        return true;
+    }
+
+    private static void EnsureManualLayoutContainer(RectTransform rt)
+    {
+        if (rt == null)
+            return;
+
+        RemoveIfExists<HorizontalLayoutGroup>(rt.gameObject);
+        RemoveIfExists<VerticalLayoutGroup>(rt.gameObject);
+        RemoveIfExists<GridLayoutGroup>(rt.gameObject);
+        RemoveIfExists<ContentSizeFitter>(rt.gameObject);
+    }
+
+    private static bool HasSimpleLayout(RectTransform root)
+    {
+        if (root == null)
+            return false;
+
+        return root.Find("NameText") != null
+            && root.Find("CardImage") != null
+            && root.Find("DescriptionText") != null;
+    }
+
+    private static void RemoveIfExists<T>(GameObject go) where T : Component
+    {
+        var comp = go.GetComponent<T>();
+        if (comp == null)
+            return;
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            DestroyImmediate(comp);
+        else
+            Destroy(comp);
+#else
+        Destroy(comp);
+#endif
+    }
+
     private void ApplySkinSprites()
     {
         ApplySprite(_frameImage, cardFrameSprite);
         ApplySprite(_nameBannerImage, nameBannerSprite);
         ApplySprite(_artFrameImage, artFrameSprite);
         ApplySprite(_descriptionPanelImage, descriptionPanelSprite);
-        SetRarityTier(0);
+        ApplyRarityVisual();
+    }
+
+    private void ApplyRarityVisual()
+    {
+        if (_usingSimpleLayout && _simpleCardRawImage != null && _simpleCardRawImage.texture == null)
+        {
+            _simpleCardRawImage.color = new Color(1f, 1f, 1f, 0f);
+            return;
+        }
+
+        if (!useRarityTint)
+        {
+            if (_usingSimpleLayout && _simpleCardGraphic != null)
+                _simpleCardGraphic.color = Color.white;
+            else if (_artFrameImage != null)
+                _artFrameImage.color = Color.white;
+            return;
+        }
+
+        Color tint = _rarityTier switch
+        {
+            3 => new Color(0.78f, 0.70f, 0.56f, 1f),
+            2 => new Color(0.78f, 0.72f, 0.86f, 1f),
+            1 => new Color(0.84f, 0.90f, 0.98f, 1f),
+            _ => Color.white
+        };
+
+        if (_usingSimpleLayout && _simpleCardGraphic != null)
+        {
+            _simpleCardGraphic.color = tint;
+            return;
+        }
+
+        if (_artFrameImage != null)
+            _artFrameImage.color = tint;
     }
 
     private static void ApplySprite(Image target, Sprite sprite)
@@ -342,6 +480,36 @@ public sealed class CardView : MonoBehaviour
         return b.x > 0f || b.y > 0f || b.z > 0f || b.w > 0f;
     }
 
+    private bool HasCustomFrameArt()
+    {
+        return cardFrameSprite != null || (_frameImage != null && _frameImage.sprite != null);
+    }
+
+    private void ApplyPreferredTextFonts()
+    {
+        Font target = ResolvePreferredTextFont();
+        if (target == null)
+            return;
+
+        if (_nameText != null)
+            _nameText.font = target;
+        if (_descriptionText != null)
+            _descriptionText.font = target;
+    }
+
+    private Font ResolvePreferredTextFont()
+    {
+        if (preferredTextFont != null)
+            return preferredTextFont;
+
+        if (_cachedJuaFont == null)
+            _cachedJuaFont = Resources.Load<Font>("Fonts/Jua-Regular");
+        if (_cachedJuaFont != null)
+            return _cachedJuaFont;
+
+        return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+    }
+
     private static Text EnsureTextChild(
         RectTransform parent,
         string name,
@@ -352,27 +520,58 @@ public sealed class CardView : MonoBehaviour
         Vector2 offsetMax)
     {
         var textRt = parent.Find(name) as RectTransform;
+        bool created = false;
         if (textRt == null)
         {
             var textGo = new GameObject(name, typeof(RectTransform), typeof(Text));
             textRt = textGo.GetComponent<RectTransform>();
             textRt.SetParent(parent, false);
+            created = true;
         }
 
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.offsetMin = offsetMin;
-        textRt.offsetMax = offsetMax;
+        if (created)
+        {
+            textRt.anchorMin = Vector2.zero;
+            textRt.anchorMax = Vector2.one;
+            textRt.offsetMin = offsetMin;
+            textRt.offsetMax = offsetMax;
+        }
 
         var txt = textRt.GetComponent<Text>();
-        var builtInFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        if (builtInFont != null)
-            txt.font = builtInFont;
+        if (txt == null)
+            txt = textRt.gameObject.AddComponent<Text>();
+        if (txt.font == null)
+        {
+            var builtInFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (builtInFont != null)
+                txt.font = builtInFont;
+        }
         txt.fontSize = fontSize;
         txt.alignment = alignment;
         txt.color = color;
         txt.supportRichText = true;
         txt.raycastTarget = false;
+        return txt;
+    }
+
+    private static Text GetOrAddText(GameObject go)
+    {
+        var txt = go.GetComponent<Text>();
+        if (txt == null)
+        {
+            txt = go.AddComponent<Text>();
+            if (txt.font == null)
+            {
+                var builtInFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                if (builtInFont != null)
+                    txt.font = builtInFont;
+            }
+            txt.fontSize = 14;
+            txt.alignment = TextAnchor.UpperLeft;
+            txt.color = Color.white;
+            txt.supportRichText = true;
+            txt.raycastTarget = false;
+        }
         return txt;
     }
 }
