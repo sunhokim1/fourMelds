@@ -5,6 +5,7 @@ using UnityEngine.EventSystems;
 using Project.InputSystem;
 using Project.UI;
 using System;
+using UnityEngine.UI;
 
 public class TileView : MonoBehaviour, IIdentifiable, IPointerClickHandler
 {
