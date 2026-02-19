@@ -726,13 +726,15 @@ namespace FourMelds.Combat
                 return;
 
             _pendingRewardChoices.Clear();
-            int choiceCount = 3;
+            var candidates = new System.Collections.Generic.List<int>(_rewardPoolCardIndices);
+            int choiceCount = Mathf.Min(3, candidates.Count);
             for (int i = 0; i < choiceCount; i++)
             {
-                int picked = PickWeightedRewardCard(_rewardPoolCardIndices);
+                int picked = PickWeightedRewardCard(candidates);
                 if (picked < 0)
                     break;
                 _pendingRewardChoices.Add(picked);
+                candidates.Remove(picked);
             }
 
             if (_pendingRewardChoices.Count == 0)
