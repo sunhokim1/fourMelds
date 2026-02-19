@@ -23,6 +23,8 @@ namespace Project.Core.Turn
 
         // Head는 "손패"가 아니라 별도 슬롯 (A안)
         public int HeadTileId { get; private set; } = 0; // 0이면 아직 없음
+        public int RinshanTileId { get; private set; } = 0;
+        public int RinshanTileOccurrence { get; private set; } = 0;
 
         // TilePool은 TurnLoopController(전투 단위)가 만들고 TurnState에 주입한다.
         public TilePool Pool { get; private set; }
@@ -68,6 +70,7 @@ namespace Project.Core.Turn
 
             // 1) Head 초기화 (다음 턴 Draw에서 다시 세팅)
             HeadTileId = 0;
+            ClearRinshanState();
 
             // 2) 턴 진행
             AdvanceTurn(); // TurnIndex++ / Phase=Draw
@@ -85,6 +88,7 @@ namespace Project.Core.Turn
             int idx = _handTiles.IndexOf(tileId);
             if (idx < 0) return false;
             _handTiles.RemoveAt(idx);
+            OnHandTileRemoved(tileId);
             return true;
         }
 
@@ -98,7 +102,11 @@ namespace Project.Core.Turn
 
         // --- 턴 정리용 (룰: 턴 끝나면 전부 소멸) ---
 
-        public void ClearAllHandTiles() => _handTiles.Clear();
+        public void ClearAllHandTiles()
+        {
+            _handTiles.Clear();
+            ClearRinshanState();
+        }
 
         public void ClearAllMelds(bool resetMeldId = true)
         {
@@ -110,6 +118,7 @@ namespace Project.Core.Turn
         {
             _handTiles.Clear();
             _handTiles.AddRange(tiles);
+            ClearRinshanState();
         }
 
         public void Dev_AddMeld(MeldType type, int[] tiles, bool fixedNow)
@@ -147,6 +156,7 @@ namespace Project.Core.Turn
             new List<int>(4),
             new List<int>(4),
         };
+        private readonly bool[] _slotFixed = new bool[4];
 
         public IReadOnlyList<int> GetSlotTiles(int slotIndex)
         {
@@ -154,9 +164,20 @@ namespace Project.Core.Turn
             return _slotTiles[slotIndex];
         }
 
+        public bool IsSlotFixed(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex > 3)
+                return false;
+            return _slotFixed[slotIndex];
+        }
+
         public void ClearAllSlots()
         {
-            for (int i = 0; i < 4; i++) _slotTiles[i].Clear();
+            for (int i = 0; i < 4; i++)
+            {
+                _slotTiles[i].Clear();
+                _slotFixed[i] = false;
+            }
         }
 
         public bool TryAddTileToSelectedSlot(int tileId, out string reason)
@@ -165,6 +186,7 @@ namespace Project.Core.Turn
 
             int slot = SelectedSlotIndex;
             if (slot < 0 || slot > 3) { reason = "No slot selected"; return false; }
+            if (_slotFixed[slot]) { reason = "Slot is fixed"; return false; }
 
             var slotList = _slotTiles[slot];
             if (slotList.Count >= 3)
@@ -193,6 +215,7 @@ namespace Project.Core.Turn
             reason = null;
 
             if (slotIndex < 0 || slotIndex > 3) { reason = "Invalid slot"; return false; }
+            if (_slotFixed[slotIndex]) { reason = "Slot is fixed"; return false; }
 
             var slotList = _slotTiles[slotIndex];
             int idx = slotList.IndexOf(tileId);
@@ -218,6 +241,11 @@ namespace Project.Core.Turn
                 reason = "Invalid slot";
                 return false;
             }
+            if (_slotFixed[slotIndex])
+            {
+                reason = "Slot is fixed";
+                return false;
+            }
 
             var slotList = _slotTiles[slotIndex];
             if (slotList.Count == 0)
@@ -238,6 +266,11 @@ namespace Project.Core.Turn
             if (slotIndex < 0 || slotIndex > 3)
             {
                 reason = "Invalid slot";
+                return false;
+            }
+            if (_slotFixed[slotIndex])
+            {
+                reason = "Slot is fixed";
                 return false;
             }
 
@@ -300,6 +333,70 @@ namespace Project.Core.Turn
 
             SortHandTiles();
             return true;
+        }
+
+        public bool TryPromoteToKanInSlot(int slotIndex, int tileId, out string reason)
+        {
+            reason = null;
+
+            if (slotIndex < 0 || slotIndex > 3)
+            {
+                reason = "Invalid slot";
+                return false;
+            }
+            if (_slotFixed[slotIndex])
+            {
+                reason = "Slot is fixed";
+                return false;
+            }
+            if (Pool == null)
+            {
+                reason = "TilePool is null";
+                return false;
+            }
+
+            if (!TryReplaceSlotWithTilesFromHand(slotIndex, new[] { tileId, tileId, tileId, tileId }, out reason))
+                return false;
+
+            _slotFixed[slotIndex] = true;
+
+            if (!Pool.TryDrawRandom(_ => true, out var rinshanTileId))
+            {
+                return true;
+            }
+
+            AddHandTile(rinshanTileId);
+            MarkRinshanTile(rinshanTileId);
+            SortHandTiles();
+            return true;
+        }
+
+        private void MarkRinshanTile(int tileId)
+        {
+            RinshanTileId = tileId;
+            RinshanTileOccurrence = CountOf(tileId);
+        }
+
+        private void OnHandTileRemoved(int tileId)
+        {
+            if (RinshanTileId == 0 || tileId != RinshanTileId)
+                return;
+
+            int remain = CountOf(tileId);
+            if (remain <= 0)
+            {
+                ClearRinshanState();
+                return;
+            }
+
+            if (RinshanTileOccurrence > remain)
+                RinshanTileOccurrence = remain;
+        }
+
+        private void ClearRinshanState()
+        {
+            RinshanTileId = 0;
+            RinshanTileOccurrence = 0;
         }
 
     }

@@ -129,4 +129,26 @@ namespace FourMelds.Combat
             return c;
         }
     }
+
+    public sealed class Yaku_RinshanKaihou : IYakuEffect
+    {
+        public string Id => "rinshan";
+
+        public bool IsActive(in AttackContext ctx)
+        {
+            // 린샹쯔모가 있었고, 4개 몸통이 완성되어 있으며, 해당 타일이 몸통에 실제 사용된 경우에만 성립
+            if (!ctx.HasRinshanTile)
+                return false;
+            if (ctx.MeldCount < 4)
+                return false;
+            if (!ctx.UsesRinshanTileInMelds)
+                return false;
+            return true;
+        }
+
+        public void Apply(in AttackContext ctx, AttackMutableState state)
+        {
+            state.GlobalMult *= 1.30f;
+        }
+    }
 }

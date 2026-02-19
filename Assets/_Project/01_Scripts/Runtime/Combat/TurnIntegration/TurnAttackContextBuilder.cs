@@ -21,8 +21,7 @@ namespace FourMelds.Combat.TurnIntegration
                 throw new ArgumentNullException(nameof(combatState));
             }
 
-            var melds = turnState.Melds ?? Array.Empty<Project.Core.Melds.MeldState>();
-            var meldSnapshots = new List<MeldSnapshot>(melds.Count);
+            var meldSnapshots = BuildMeldSnapshots(turnState);
 
             // SuitSummary 계산용
             int manzu = 0, souzu = 0, pinzu = 0, honors = 0;
@@ -30,20 +29,14 @@ namespace FourMelds.Combat.TurnIntegration
             // TanyaoLike(2~8 숫자패만) 체크용
             bool isTanyaoLike = true;
 
-            for (int i = 0; i < melds.Count; i++)
+            for (int i = 0; i < meldSnapshots.Count; i++)
             {
-                var m = melds[i];
-                if (m == null)
-                {
-                    Debug.LogWarning("[CTX] MeldState is null");
-                    continue;
-                }
-
+                var m = meldSnapshots[i];
                 var tiles = m.Tiles ?? Array.Empty<int>();
                 int firstTile = (tiles.Length > 0) ? tiles[0] : 0;
 
                 if (tiles.Length == 0)
-                    Debug.LogWarning($"[CTX] Meld tiles null/empty. meldId={m.MeldId} type={m.Type}");
+                    Debug.LogWarning($"[CTX] Meld tiles null/empty. type={m.Type}");
 
                 var suit = GuessSuitFromTileId(firstTile);
                 AddSuitCount(suit, ref manzu, ref souzu, ref pinzu, ref honors);
@@ -59,16 +52,13 @@ namespace FourMelds.Combat.TurnIntegration
                     if (rank < 2 || rank > 8) { isTanyaoLike = false; break; } // 1/9
                 }
 
-                meldSnapshots.Add(new MeldSnapshot(
-                    Type: m.Type,
-                    Suit: suit,
-                    IsFixed: m.IsFixed,
-                    Tiles: tiles
-                ));
             }
 
             int meldCount = meldSnapshots.Count;
             int baseDamage = meldCount * 5;
+            int rinshanTileId = turnState.RinshanTileId;
+            bool hasRinshanTile = rinshanTileId != 0;
+            bool usesRinshanTileInMelds = hasRinshanTile && IsTileUsedInMelds(rinshanTileId, meldSnapshots);
 
             // ✅ Head
             int headTileId = turnState.HeadTileId;
@@ -120,9 +110,117 @@ namespace FourMelds.Combat.TurnIntegration
                 melds: meldSnapshots,
                 baseDamage: baseDamage,
                 suits: suits,
+                rinshanTileId: rinshanTileId,
+                hasRinshanTile: hasRinshanTile,
+                usesRinshanTileInMelds: usesRinshanTileInMelds,
                 yakuEffects: YakuRegistry.CreateDefault(),
                 relicEffects: Array.Empty<IRelicEffect>()
             );
+        }
+
+        private static List<MeldSnapshot> BuildMeldSnapshots(TurnState turnState)
+        {
+            var list = new List<MeldSnapshot>(4);
+            for (int slot = 0; slot < 4; slot++)
+            {
+                var slotTilesReadonly = turnState.GetSlotTiles(slot);
+                if (slotTilesReadonly == null || slotTilesReadonly.Count < 3)
+                    continue;
+
+                var slotTiles = new int[slotTilesReadonly.Count];
+                for (int i = 0; i < slotTiles.Length; i++)
+                    slotTiles[i] = slotTilesReadonly[i];
+
+                if (!TryResolveMeldType(slotTiles, out var type))
+                    continue;
+
+                int firstTile = slotTiles[0];
+                list.Add(new MeldSnapshot(
+                    Type: type,
+                    Suit: GuessSuitFromTileId(firstTile),
+                    IsFixed: turnState.IsSlotFixed(slot),
+                    Tiles: slotTiles));
+            }
+
+            if (list.Count > 0)
+                return list;
+
+            // Fallback for legacy/dev paths that still populate TurnState.Melds.
+            var melds = turnState.Melds ?? Array.Empty<Project.Core.Melds.MeldState>();
+            for (int i = 0; i < melds.Count; i++)
+            {
+                var m = melds[i];
+                if (m == null)
+                    continue;
+                var tiles = m.Tiles ?? Array.Empty<int>();
+                int firstTile = tiles.Length > 0 ? tiles[0] : 0;
+                list.Add(new MeldSnapshot(
+                    Type: m.Type,
+                    Suit: GuessSuitFromTileId(firstTile),
+                    IsFixed: m.IsFixed,
+                    Tiles: tiles));
+            }
+
+            return list;
+        }
+
+        private static bool TryResolveMeldType(int[] tiles, out Project.Core.Melds.MeldType type)
+        {
+            type = Project.Core.Melds.MeldType.Shuntsu;
+            if (tiles == null || tiles.Length < 3)
+                return false;
+
+            bool allSame = true;
+            for (int i = 1; i < tiles.Length; i++)
+                if (tiles[i] != tiles[0]) { allSame = false; break; }
+
+            if (allSame && tiles.Length == 4)
+            {
+                type = Project.Core.Melds.MeldType.Kantsu;
+                return true;
+            }
+
+            if (allSame && tiles.Length == 3)
+            {
+                type = Project.Core.Melds.MeldType.Koutsu;
+                return true;
+            }
+
+            if (tiles.Length != 3)
+                return false;
+
+            Array.Sort(tiles);
+            int a = tiles[0], b = tiles[1], c = tiles[2];
+            int suit = a / 100;
+            if (suit < 1 || suit > 3 || b / 100 != suit || c / 100 != suit)
+                return false;
+
+            int ra = a % 100, rb = b % 100, rc = c % 100;
+            if (rb == ra + 1 && rc == rb + 1)
+            {
+                type = Project.Core.Melds.MeldType.Shuntsu;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsTileUsedInMelds(int tileId, IReadOnlyList<MeldSnapshot> melds)
+        {
+            if (tileId == 0 || melds == null)
+                return false;
+
+            for (int i = 0; i < melds.Count; i++)
+            {
+                var tiles = melds[i].Tiles;
+                if (tiles == null)
+                    continue;
+                for (int t = 0; t < tiles.Count; t++)
+                    if (tiles[t] == tileId)
+                        return true;
+            }
+
+            return false;
         }
 
         private static void AddSuitCount(MahjongSuit suit, ref int manzu, ref int souzu, ref int pinzu, ref int honors)

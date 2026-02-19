@@ -12,7 +12,8 @@ namespace FourMelds.Combat
                 new Yaku_Tanyao(),
                 new Yaku_Toitoi(),
                 new Yaku_Sanankou(),
-                new Yaku_Suankou()
+                new Yaku_Suankou(),
+                new Yaku_RinshanKaihou()
             };
         }
     }

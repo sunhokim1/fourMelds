@@ -92,7 +92,7 @@ public class MeldSlotsView : MonoBehaviour
             slot.OnSlotTileClicked = (slotIdx, tileId) => OnSlotTileClicked?.Invoke(slotIdx, tileId);
             slot.OnSlotRightClicked = idx => OnSlotRightClicked?.Invoke(idx); // ✅
 
-            slot.BindTiles(i, state.GetSlotTiles(i));
+            slot.BindTiles(i, state.GetSlotTiles(i), state.IsSlotFixed(i));
         }
     }
 

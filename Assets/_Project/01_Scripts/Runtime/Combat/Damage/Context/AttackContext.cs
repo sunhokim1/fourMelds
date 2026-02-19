@@ -20,6 +20,9 @@ namespace FourMelds.Combat
 
         public int BaseDamage { get; }
         public SuitSummary Suits { get; }
+        public int RinshanTileId { get; }
+        public bool HasRinshanTile { get; }
+        public bool UsesRinshanTileInMelds { get; }
 
         public IReadOnlyList<IYakuEffect> YakuEffects { get; }
         public IReadOnlyList<IRelicEffect> RelicEffects { get; }
@@ -34,6 +37,9 @@ namespace FourMelds.Combat
             IReadOnlyList<MeldSnapshot> melds,
             int baseDamage,
             SuitSummary suits,
+            int rinshanTileId,
+            bool hasRinshanTile,
+            bool usesRinshanTileInMelds,
             IReadOnlyList<IYakuEffect> yakuEffects,
             IReadOnlyList<IRelicEffect> relicEffects)
         {
@@ -49,6 +55,9 @@ namespace FourMelds.Combat
 
             BaseDamage = baseDamage;
             Suits = suits;
+            RinshanTileId = rinshanTileId;
+            HasRinshanTile = hasRinshanTile;
+            UsesRinshanTileInMelds = usesRinshanTileInMelds;
 
             YakuEffects = yakuEffects;
             RelicEffects = relicEffects;

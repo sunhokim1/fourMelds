@@ -22,6 +22,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private Color selectedBgColor = new Color(0.45f, 0.65f, 0.95f, 0.55f);
     [SerializeField] private Color normalOutlineColor = new Color(0f, 0f, 0f, 0f);
     [SerializeField] private Color selectedOutlineColor = new Color(0.8f, 0.9f, 1f, 0.95f);
+    [SerializeField] private Color fixedOutlineColor = new Color(0.95f, 0.78f, 0.20f, 0.95f);
 
     public Action<int> OnSlotClicked;                 // 좌클릭: 슬롯 선택
     public Action<int, int> OnSlotTileClicked;        // 좌클릭: 타일 1개 되돌리기
@@ -36,6 +37,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
     private bool _isPendingPlacement;
     private string _pendingLabel;
     private bool _isHeadSlot;
+    private bool _isFixedSlot;
 
     private void Awake()
     {
@@ -63,15 +65,20 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
         _pendingLabel = pendingLabel;
     }
 
-    public void BindTiles(int slotIndex, IReadOnlyList<int> tiles)
+    public void BindTiles(int slotIndex, IReadOnlyList<int> tiles, bool isFixed)
     {
         _isHeadSlot = false;
+        _isFixedSlot = isFixed;
+        ApplySelectedVisual();
         _slotIndex = slotIndex;
         EnsureTileRootLayout(isHeadSlot: false);
         ClearTilesOnly();
 
         int count = tiles != null ? tiles.Count : 0;
-        string baseText = count == 0 ? "(empty)" : $"(building) {count}/3";
+        int targetCount = count >= 4 ? 4 : 3;
+        string baseText = count == 0 ? "(empty)" : $"(building) {count}/{targetCount}";
+        if (_isFixedSlot)
+            baseText = $"{baseText} [고정]";
         if (_isPendingPlacement && !string.IsNullOrWhiteSpace(_pendingLabel))
             infoText.text = $"{baseText}  [Pending: {_pendingLabel}]";
         else
@@ -111,6 +118,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
         _slotIndex = -1;
         _isPendingPlacement = false;
         _pendingLabel = null;
+        _isFixedSlot = false;
         EnsureTileRootLayout(isHeadSlot: true);
         SetSelected(false);
         ClearTilesOnly();
@@ -197,7 +205,7 @@ public class MeldSlotView : MonoBehaviour, IPointerClickHandler
             _rootImage.color = _isSelected ? selectedBgColor : normalBgColor;
 
         if (_outline != null)
-            _outline.effectColor = _isSelected ? selectedOutlineColor : normalOutlineColor;
+            _outline.effectColor = _isFixedSlot ? fixedOutlineColor : (_isSelected ? selectedOutlineColor : normalOutlineColor);
     }
 
     private SlotTileIconView GetOrCreateIcon()

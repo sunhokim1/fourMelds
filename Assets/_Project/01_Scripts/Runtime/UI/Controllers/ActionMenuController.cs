@@ -119,7 +119,9 @@ public class ActionMenuController : MonoBehaviour, IActionRequestSink
             return;
 
         if (option != null &&
-            (option.Command == ActionCommandType.CreateShuntsu || option.Command == ActionCommandType.CreateKoutsu))
+            (option.Command == ActionCommandType.CreateShuntsu ||
+             option.Command == ActionCommandType.CreateKoutsu ||
+             option.Command == ActionCommandType.PromoteToKan))
         {
             if (IsSamePendingOption(option))
             {
@@ -154,21 +156,42 @@ public class ActionMenuController : MonoBehaviour, IActionRequestSink
 
         if (_pendingQuickMeldOption != null)
         {
-            var tiles = ResolvePendingTiles(_pendingQuickMeldOption);
-            if (tiles == null || tiles.Length == 0)
+            if (_pendingQuickMeldOption.Command == ActionCommandType.PromoteToKan)
             {
-                Debug.LogWarning("[QUICK-MELD] Pending option has no tiles.");
-                _pendingQuickMeldOption = null;
-            }
-            else if (_turnState.TryReplaceSlotWithTilesFromHand(index, tiles, out var replaceReason))
-            {
-                _turnState.SelectSlot(index);
-                _pendingQuickMeldOption = null;
-                Debug.Log($"[QUICK-MELD] Placed into slot={index}: {string.Join(",", tiles)}");
+                if (_pendingQuickMeldOption.Payload is not int kanTileId)
+                {
+                    Debug.LogWarning("[QUICK-MELD] Pending Kan option has invalid payload.");
+                    _pendingQuickMeldOption = null;
+                }
+                else if (_turnState.TryPromoteToKanInSlot(index, kanTileId, out var kanReason))
+                {
+                    _turnState.SelectSlot(index);
+                    _pendingQuickMeldOption = null;
+                    Debug.Log($"[QUICK-MELD] Kan fixed at slot={index}: {kanTileId}x4 + rinshan");
+                }
+                else
+                {
+                    Debug.LogWarning($"[QUICK-MELD] Kan failed: {kanReason}");
+                }
             }
             else
             {
-                Debug.LogWarning($"[QUICK-MELD] Place failed: {replaceReason}");
+                var tiles = ResolvePendingTiles(_pendingQuickMeldOption);
+                if (tiles == null || tiles.Length == 0)
+                {
+                    Debug.LogWarning("[QUICK-MELD] Pending option has no tiles.");
+                    _pendingQuickMeldOption = null;
+                }
+                else if (_turnState.TryReplaceSlotWithTilesFromHand(index, tiles, out var replaceReason))
+                {
+                    _turnState.SelectSlot(index);
+                    _pendingQuickMeldOption = null;
+                    Debug.Log($"[QUICK-MELD] Placed into slot={index}: {string.Join(",", tiles)}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[QUICK-MELD] Place failed: {replaceReason}");
+                }
             }
 
             RenderAll();
@@ -223,6 +246,11 @@ public class ActionMenuController : MonoBehaviour, IActionRequestSink
         {
             return new[] { tileId, tileId, tileId };
         }
+        if (option.Command == ActionCommandType.PromoteToKan &&
+            option.Payload is int kanTileId)
+        {
+            return new[] { kanTileId, kanTileId, kanTileId, kanTileId };
+        }
 
         return option.PreviewTiles;
     }
@@ -259,6 +287,7 @@ public class ActionMenuController : MonoBehaviour, IActionRequestSink
         if (_pendingQuickMeldOption == null) return null;
         return _pendingQuickMeldOption.Command == ActionCommandType.CreateShuntsu ? "Shuntsu" :
                _pendingQuickMeldOption.Command == ActionCommandType.CreateKoutsu ? "Koutsu" :
+               _pendingQuickMeldOption.Command == ActionCommandType.PromoteToKan ? "Kan" :
                _pendingQuickMeldOption.Command.ToString();
     }
 
@@ -275,7 +304,10 @@ public class ActionMenuController : MonoBehaviour, IActionRequestSink
     private void RenderAll()
     {
         if (handTilesView != null)
+        {
+            handTilesView.SetSpecialTileMarker(_turnState.RinshanTileId, _turnState.RinshanTileOccurrence);
             handTilesView.Render(_turnState.HandTiles);
+        }
 
         RenderMeldSlots();
     }

@@ -79,8 +79,17 @@ namespace Project.Core.Action.Execute
                         return true;
                     }
 
-                // (옵션) PromoteToKan도 여기서 추가 가능
-                // case ActionCommandType.PromoteToKan: ...
+                case ActionCommandType.PromoteToKan:
+                    {
+                        if (command.Payload is not int kanTileId)
+                        {
+                            failReason = "Invalid payload for Kan";
+                            return false;
+                        }
+
+                        int slot = state.SelectedSlotIndex;
+                        return state.TryPromoteToKanInSlot(slot, kanTileId, out failReason);
+                    }
 
                 default:
                     failReason = "Not implemented";

@@ -41,6 +41,9 @@ public class HandTilesView : MonoBehaviour
     private readonly List<int> _souzu = new();
     private readonly List<int> _pinzu = new();
     private readonly List<int> _honor = new();
+    private int _specialTileId;
+    private int _specialTileOccurrence;
+    private int _specialTileSeenCount;
 
     private void Awake()
     {
@@ -81,6 +84,8 @@ public class HandTilesView : MonoBehaviour
         _pinzu.Sort();
         _honor.Sort();
 
+        _specialTileSeenCount = 0;
+
         RenderGroup(manzuRoot, _manzu);
         RenderGroup(souzuRoot, _souzu);
         RenderGroup(pinzuRoot, _pinzu);
@@ -106,11 +111,26 @@ public class HandTilesView : MonoBehaviour
         {
             var tv = GetOrCreateTile(content);
             tv.Bind(tiles[i]);
+            if (tiles[i] == _specialTileId && _specialTileId != 0)
+            {
+                _specialTileSeenCount++;
+                tv.SetSpecialHighlight(_specialTileSeenCount == _specialTileOccurrence);
+            }
+            else
+            {
+                tv.SetSpecialHighlight(false);
+            }
             var rt = tv.transform as RectTransform;
             if (rt != null)
                 rt.localScale = Vector3.one;
             _active.Add(tv);
         }
+    }
+
+    public void SetSpecialTileMarker(int tileId, int occurrence)
+    {
+        _specialTileId = tileId;
+        _specialTileOccurrence = occurrence <= 0 ? 0 : occurrence;
     }
 
     private TileView GetOrCreateTile(Transform parent)

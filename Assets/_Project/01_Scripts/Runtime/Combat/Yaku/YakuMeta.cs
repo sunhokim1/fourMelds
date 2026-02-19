@@ -21,6 +21,7 @@
             "toitoi" => new YakuMeta("또이또이", 200),
             "sanankou" => new YakuMeta("산앙커", 300),
             "suankou" => new YakuMeta("쓰앙커", 400),
+            "rinshan" => new YakuMeta("영상개화", 500),
 
             _ => new YakuMeta(id, 9999)
         };

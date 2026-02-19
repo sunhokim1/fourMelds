@@ -15,6 +15,9 @@ public class TileView : MonoBehaviour, IIdentifiable, IPointerClickHandler
 
     [SerializeField] private MouseActionRequestSource inputSource;
     [SerializeField] private TileVisual visual;
+    [SerializeField] private Color specialBorderColor = new Color(0.96f, 0.78f, 0.22f, 0.98f);
+    [SerializeField] private Vector2 specialBorderDistance = new Vector2(2f, -2f);
+    private Outline _specialOutline;
     private void Awake()
     {
         if (visual == null)
@@ -22,12 +25,32 @@ public class TileView : MonoBehaviour, IIdentifiable, IPointerClickHandler
 
         if (inputSource == null)
             inputSource = FindFirstObjectByType<MouseActionRequestSource>();
+
+        _specialOutline = GetComponent<Outline>();
+        if (_specialOutline == null)
+            _specialOutline = gameObject.AddComponent<Outline>();
+        _specialOutline.enabled = false;
+        _specialOutline.effectColor = specialBorderColor;
+        _specialOutline.effectDistance = specialBorderDistance;
     }
 
     public void Bind(int tileId)
     {
         id = tileId;
         if (visual != null) visual.SetTile(tileId);
+        SetSpecialHighlight(false);
+    }
+
+    public void SetSpecialHighlight(bool enabled)
+    {
+        if (_specialOutline == null)
+            return;
+        _specialOutline.enabled = enabled;
+        if (enabled)
+        {
+            _specialOutline.effectColor = specialBorderColor;
+            _specialOutline.effectDistance = specialBorderDistance;
+        }
     }
 
     public void OnPointerClick(PointerEventData eventData)
