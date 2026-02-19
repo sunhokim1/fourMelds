@@ -52,6 +52,12 @@ namespace FourMelds.Combat
         [SerializeField] private int _cardsPerTurn = 5;
         [SerializeField] private int[] _startingDeckCardIndices = Array.Empty<int>();
         [SerializeField] private int _rewardEveryTurns = 3;
+        [Header("Reward Rarity Weights")]
+        [SerializeField] private float _rewardWeightCommon = 1.00f;
+        [SerializeField] private float _rewardWeightRare = 0.60f;
+        [SerializeField] private float _rewardWeightEpic = 0.35f;
+        [SerializeField] private float _rewardWeightLegendary = 0.18f;
+        [SerializeField] private float _rewardWeightDream = 0.08f;
         [SerializeField] private bool _animatePhaseSwap = true;
         [SerializeField] private float _phaseSwapDuration = 0.22f;
         [SerializeField] private float _cardPanelHiddenYOffset = -280f;
@@ -720,16 +726,14 @@ namespace FourMelds.Combat
                 return;
 
             _pendingRewardChoices.Clear();
-            var picks = new System.Collections.Generic.List<int>(_rewardPoolCardIndices);
-            for (int i = picks.Count - 1; i > 0; i--)
-            {
-                int j = UnityEngine.Random.Range(0, i + 1);
-                (picks[i], picks[j]) = (picks[j], picks[i]);
-            }
-
-            int choiceCount = Mathf.Min(3, picks.Count);
+            int choiceCount = 3;
             for (int i = 0; i < choiceCount; i++)
-                _pendingRewardChoices.Add(picks[i]);
+            {
+                int picked = PickWeightedRewardCard(_rewardPoolCardIndices);
+                if (picked < 0)
+                    break;
+                _pendingRewardChoices.Add(picked);
+            }
 
             if (_pendingRewardChoices.Count == 0)
                 return;
@@ -740,6 +744,48 @@ namespace FourMelds.Combat
             SetRewardFocusUI(enabled: true);
             UpdateCardPanelState();
             Debug.Log($"[REWARD] Turn {_turnState.TurnIndex}: choose 1 of {_pendingRewardChoices.Count} cards.");
+        }
+
+        private int PickWeightedRewardCard(System.Collections.Generic.IReadOnlyList<int> candidates)
+        {
+            if (candidates == null || candidates.Count == 0)
+                return -1;
+
+            float totalWeight = 0f;
+            for (int i = 0; i < candidates.Count; i++)
+                totalWeight += GetRewardWeight(candidates[i]);
+
+            if (totalWeight <= 0.0001f)
+            {
+                int idx = UnityEngine.Random.Range(0, candidates.Count);
+                return candidates[idx];
+            }
+
+            float roll = UnityEngine.Random.Range(0f, totalWeight);
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                int cardIndex = candidates[i];
+                roll -= GetRewardWeight(cardIndex);
+                if (roll <= 0f)
+                    return cardIndex;
+            }
+
+            return candidates[candidates.Count - 1];
+        }
+
+        private float GetRewardWeight(int cardIndex)
+        {
+            if (!CardRegistry.TryGetDefinition(cardIndex, out var def) || def == null)
+                return Mathf.Max(0.0001f, _rewardWeightCommon);
+
+            return Mathf.Max(0.0001f, def.rarity switch
+            {
+                4 => _rewardWeightDream,
+                3 => _rewardWeightLegendary,
+                2 => _rewardWeightEpic,
+                1 => _rewardWeightRare,
+                _ => _rewardWeightCommon
+            });
         }
 
         private void EnsureRewardPanel()
