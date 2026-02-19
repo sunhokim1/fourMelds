@@ -260,6 +260,7 @@ public sealed class CardView : MonoBehaviour
     {
         var bannerRt = EnsureRectChild("NameBanner", _contentRoot, out bool created);
         float s = GetLayoutScale();
+        float textScale = Mathf.Min(s, 1f);
         bannerRt.anchorMin = new Vector2(0f, 1f);
         bannerRt.anchorMax = new Vector2(1f, 1f);
         bannerRt.pivot = new Vector2(0.5f, 1f);
@@ -278,13 +279,13 @@ public sealed class CardView : MonoBehaviour
         if (_nameText != null)
         {
             var rt = _nameText.rectTransform;
-            rt.offsetMin = new Vector2(10f * s, 2f * s);
-            rt.offsetMax = new Vector2(-10f * s, -2f * s);
+            rt.offsetMin = new Vector2(10f * textScale, 2f * textScale);
+            rt.offsetMax = new Vector2(-10f * textScale, -2f * textScale);
         }
 
         _nameText.horizontalOverflow = HorizontalWrapMode.Overflow;
         _nameText.verticalOverflow = VerticalWrapMode.Truncate;
-        _nameText.fontSize = Mathf.Clamp(Mathf.RoundToInt(18f * s), 12, 36);
+        _nameText.fontSize = Mathf.Clamp(Mathf.RoundToInt(18f * textScale), 12, 28);
     }
 
     private void EnsureArtFrame()
@@ -304,6 +305,7 @@ public sealed class CardView : MonoBehaviour
     {
         var descRt = EnsureRectChild("DescriptionPanel", _contentRoot, out bool created);
         float s = GetLayoutScale();
+        float textScale = Mathf.Min(s, 1f);
         descRt.anchorMin = new Vector2(0f, 0f);
         descRt.anchorMax = new Vector2(1f, 0f);
         descRt.pivot = new Vector2(0.5f, 0f);
@@ -322,13 +324,13 @@ public sealed class CardView : MonoBehaviour
         if (_descriptionText != null)
         {
             var rt = _descriptionText.rectTransform;
-            rt.offsetMin = new Vector2(8f * s, 6f * s);
-            rt.offsetMax = new Vector2(-8f * s, -6f * s);
+            rt.offsetMin = new Vector2(8f * textScale, 6f * textScale);
+            rt.offsetMax = new Vector2(-8f * textScale, -6f * textScale);
         }
 
         _descriptionText.horizontalOverflow = HorizontalWrapMode.Wrap;
         _descriptionText.verticalOverflow = VerticalWrapMode.Truncate;
-        _descriptionText.fontSize = Mathf.Clamp(Mathf.RoundToInt(14f * s), 10, 30);
+        _descriptionText.fontSize = Mathf.Clamp(Mathf.RoundToInt(14f * textScale), 10, 22);
     }
 
     private float GetLayoutScale()
