@@ -33,16 +33,16 @@ namespace FourMelds.Combat.TurnIntegration
             {
                 var m = meldSnapshots[i];
                 var tiles = m.Tiles ?? Array.Empty<int>();
-                int firstTile = (tiles.Length > 0) ? tiles[0] : 0;
+                int firstTile = (tiles.Count > 0) ? tiles[0] : 0;
 
-                if (tiles.Length == 0)
+                if (tiles.Count == 0)
                     Debug.LogWarning($"[CTX] Meld tiles null/empty. type={m.Type}");
 
                 var suit = GuessSuitFromTileId(firstTile);
                 AddSuitCount(suit, ref manzu, ref souzu, ref pinzu, ref honors);
 
                 // TanyaoLike: 멜드에 포함된 타일이 하나라도 1/9/자패면 false
-                for (int t = 0; t < tiles.Length; t++)
+                for (int t = 0; t < tiles.Count; t++)
                 {
                     int id = tiles[t];
                     int group = id / 100;
