@@ -37,6 +37,7 @@ namespace FourMelds.Combat
         [SerializeField] private Text _rewardTitleText;
         [SerializeField] private Text _rewardStatusText;
         [SerializeField] private Transform _rewardChoicesRoot;
+        [SerializeField] private Button _rewardSkipButton;
         [SerializeField] private int _playerHp = 50;
         [SerializeField] private int _enemyHp = 60;
         [SerializeField] private int _cardsPerTurn = 5;
@@ -156,6 +157,8 @@ namespace FourMelds.Combat
                 _exchangeConfirmButton.onClick.RemoveListener(OnExchangeConfirmClicked);
             if (_exchangeCancelButton != null)
                 _exchangeCancelButton.onClick.RemoveListener(OnExchangeCancelClicked);
+            if (_rewardSkipButton != null)
+                _rewardSkipButton.onClick.RemoveListener(OnRewardSkipClicked);
 
             if (_phaseSwapRoutine != null)
             {
@@ -731,7 +734,7 @@ namespace FourMelds.Combat
 
         private void EnsureRewardPanel()
         {
-            if (_rewardPanelRoot != null && _rewardTitleText != null && _rewardStatusText != null && _rewardChoicesRoot != null)
+            if (_rewardPanelRoot != null && _rewardTitleText != null && _rewardStatusText != null && _rewardChoicesRoot != null && _rewardSkipButton != null)
                 return;
 
             var parent = FindRootCanvasRect();
@@ -812,6 +815,33 @@ namespace FourMelds.Combat
                 le.preferredHeight = 250f;
                 le.flexibleWidth = 1f;
             }
+
+            Transform footerRow = root.Find("RewardFooterRow");
+            if (footerRow == null)
+            {
+                var rowGo = new GameObject("RewardFooterRow", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+                rowGo.transform.SetParent(root, false);
+                footerRow = rowGo.transform;
+                var hlg = rowGo.GetComponent<HorizontalLayoutGroup>();
+                hlg.spacing = 8f;
+                hlg.childAlignment = TextAnchor.MiddleRight;
+                hlg.childControlHeight = true;
+                hlg.childControlWidth = false;
+                hlg.childForceExpandHeight = false;
+                hlg.childForceExpandWidth = false;
+                var le = rowGo.GetComponent<LayoutElement>();
+                le.preferredHeight = 40f;
+            }
+
+            if (_rewardSkipButton == null)
+                _rewardSkipButton = CreateRuntimeButton(footerRow, "보상 건너뛰기");
+
+            if (_rewardSkipButton != null)
+            {
+                _rewardSkipButton.onClick.RemoveListener(OnRewardSkipClicked);
+                _rewardSkipButton.onClick.AddListener(OnRewardSkipClicked);
+                _rewardSkipButton.interactable = false;
+            }
         }
 
         private void RebuildRewardChoicesUI()
@@ -823,7 +853,7 @@ namespace FourMelds.Combat
                 return;
 
             _rewardTitleText.text = "카드 보상 선택";
-            _rewardStatusText.text = "3턴 보상: 카드 1장을 선택하세요.";
+            _rewardStatusText.text = "3턴 보상: 카드 1장을 선택하거나 건너뛸 수 있습니다.";
 
             for (int i = _rewardChoicesRoot.childCount - 1; i >= 0; i--)
                 Destroy(_rewardChoicesRoot.GetChild(i).gameObject);
@@ -858,6 +888,9 @@ namespace FourMelds.Combat
                 btn.onClick.RemoveAllListeners();
                 btn.onClick.AddListener(() => OnRewardChoiceSelected(cardIndex));
             }
+
+            if (_rewardSkipButton != null)
+                _rewardSkipButton.interactable = true;
         }
 
         private void OnRewardChoiceSelected(int rewardCardIndex)
@@ -876,12 +909,23 @@ namespace FourMelds.Combat
             CloseRewardPanel();
         }
 
+        private void OnRewardSkipClicked()
+        {
+            if (!_isRewardSelectionPending)
+                return;
+
+            Debug.Log($"[REWARD] Skipped on turn {_turnState?.TurnIndex ?? 0}.");
+            CloseRewardPanel();
+        }
+
         private void CloseRewardPanel()
         {
             _isRewardSelectionPending = false;
             _pendingRewardChoices.Clear();
             if (_rewardPanelRoot != null)
                 _rewardPanelRoot.SetActive(false);
+            if (_rewardSkipButton != null)
+                _rewardSkipButton.interactable = false;
             SetRewardFocusUI(enabled: false);
             UpdateCardPanelState();
             RefreshTurnStatus();
