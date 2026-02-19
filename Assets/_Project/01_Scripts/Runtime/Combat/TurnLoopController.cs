@@ -39,7 +39,7 @@ namespace FourMelds.Combat
         [SerializeField] private Transform _rewardChoicesRoot;
         [SerializeField] private Button _rewardSkipButton;
         [SerializeField] [Range(1f, 1.8f)] private float _rewardCardPreviewScale = 1.22f;
-        [SerializeField] [Range(8f, 80f)] private float _rewardChoiceSpacing = 28f;
+        [SerializeField] [Range(8f, 80f)] private float _rewardChoiceSpacing = 50f;
         [SerializeField] private int _playerHp = 50;
         [SerializeField] private int _enemyHp = 60;
         [SerializeField] private int _cardsPerTurn = 5;
