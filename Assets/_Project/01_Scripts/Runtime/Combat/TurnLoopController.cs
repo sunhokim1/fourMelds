@@ -32,6 +32,11 @@ namespace FourMelds.Combat
         [SerializeField] private Image _exchangeSelectedTilesFrame;
         [SerializeField] private Button _exchangeConfirmButton;
         [SerializeField] private Button _exchangeCancelButton;
+        [Header("Reward UI")]
+        [SerializeField] private GameObject _rewardPanelRoot;
+        [SerializeField] private Text _rewardTitleText;
+        [SerializeField] private Text _rewardStatusText;
+        [SerializeField] private Transform _rewardChoicesRoot;
         [SerializeField] private int _playerHp = 50;
         [SerializeField] private int _enemyHp = 60;
         [SerializeField] private int _cardsPerTurn = 5;
@@ -83,6 +88,8 @@ namespace FourMelds.Combat
         private readonly System.Collections.Generic.List<CanvasGroup> _exchangeDimCanvasGroups = new System.Collections.Generic.List<CanvasGroup>();
         private readonly System.Collections.Generic.List<int> _rewardPoolCardIndices = new System.Collections.Generic.List<int>();
         private bool _rewardPoolBuilt;
+        private bool _isRewardSelectionPending;
+        private readonly System.Collections.Generic.List<int> _pendingRewardChoices = new System.Collections.Generic.List<int>();
 
         private void Awake()
         {
@@ -141,7 +148,10 @@ namespace FourMelds.Combat
                 _cardPanel.OnHandCardClicked -= OnHandCardClicked;
             TileView.OnTileClicked -= HandleTileViewClicked;
             SetExchangeFocusUI(enabled: false);
+            SetRewardFocusUI(enabled: false);
             ClearExchangePreviewTiles();
+            if (_rewardPanelRoot != null)
+                _rewardPanelRoot.SetActive(false);
             if (_exchangeConfirmButton != null)
                 _exchangeConfirmButton.onClick.RemoveListener(OnExchangeConfirmClicked);
             if (_exchangeCancelButton != null)
@@ -186,6 +196,8 @@ namespace FourMelds.Combat
 
             if (_turnState.Phase == TurnPhase.CardUse)
             {
+                if (_isRewardSelectionPending)
+                    return;
                 if (_isExchangePending)
                     CancelPendingExchange("phase advance");
                 EnterBuildFromCardUse();
@@ -306,9 +318,9 @@ namespace FourMelds.Combat
             }
 
             _turnState.SetPhase(TurnPhase.CardUse);
-            TryGrantPeriodicReward();
             _cardDeck?.StartTurnDraw(_cardsPerTurn);
             CancelPendingExchange("turn start");
+            TryStartPeriodicRewardSelection();
             SetBuildDoneInteractable(true);
             UpdateAdvanceButtonLabel();
             UpdatePhaseBoardState();
@@ -435,7 +447,7 @@ namespace FourMelds.Combat
                 return;
 
             bool isCardUse = _turnState.Phase == TurnPhase.CardUse;
-            _cardPanel.SetInteractable(isCardUse && !_isExchangePending);
+            _cardPanel.SetInteractable(isCardUse && !_isExchangePending && !_isRewardSelectionPending);
             _cardPanel.RenderHand(_cardDeck?.HandCards ?? Array.Empty<int>());
         }
 
@@ -680,7 +692,7 @@ namespace FourMelds.Combat
             Debug.LogWarning("[CARD] Starter deck id mapping failed. Fallback to full registered card set.");
         }
 
-        private void TryGrantPeriodicReward()
+        private void TryStartPeriodicRewardSelection()
         {
             if (_turnState == null || _cardDeck == null)
                 return;
@@ -694,8 +706,165 @@ namespace FourMelds.Combat
             if (_rewardPoolCardIndices.Count == 0)
                 return;
 
-            int pick = UnityEngine.Random.Range(0, _rewardPoolCardIndices.Count);
-            int rewardCardIndex = _rewardPoolCardIndices[pick];
+            _pendingRewardChoices.Clear();
+            var picks = new System.Collections.Generic.List<int>(_rewardPoolCardIndices);
+            for (int i = picks.Count - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i + 1);
+                (picks[i], picks[j]) = (picks[j], picks[i]);
+            }
+
+            int choiceCount = Mathf.Min(3, picks.Count);
+            for (int i = 0; i < choiceCount; i++)
+                _pendingRewardChoices.Add(picks[i]);
+
+            if (_pendingRewardChoices.Count == 0)
+                return;
+
+            _isRewardSelectionPending = true;
+            EnsureRewardPanel();
+            RebuildRewardChoicesUI();
+            SetRewardFocusUI(enabled: true);
+            UpdateCardPanelState();
+            Debug.Log($"[REWARD] Turn {_turnState.TurnIndex}: choose 1 of {_pendingRewardChoices.Count} cards.");
+        }
+
+        private void EnsureRewardPanel()
+        {
+            if (_rewardPanelRoot != null && _rewardTitleText != null && _rewardStatusText != null && _rewardChoicesRoot != null)
+                return;
+
+            var parent = FindRootCanvasRect();
+            if (parent == null)
+                return;
+
+            if (_rewardPanelRoot == null)
+            {
+                var rootGo = new GameObject("RewardOverlay", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+                rootGo.transform.SetParent(parent, false);
+                _rewardPanelRoot = rootGo;
+
+                var rootRt = rootGo.GetComponent<RectTransform>();
+                rootRt.anchorMin = new Vector2(0.5f, 0.5f);
+                rootRt.anchorMax = new Vector2(0.5f, 0.5f);
+                rootRt.pivot = new Vector2(0.5f, 0.5f);
+                rootRt.sizeDelta = new Vector2(920f, 360f);
+                rootRt.anchoredPosition = Vector2.zero;
+
+                var bg = rootGo.GetComponent<Image>();
+                bg.color = new Color(0.05f, 0.07f, 0.10f, 0.97f);
+                bg.raycastTarget = true;
+
+                var vlg = rootGo.GetComponent<VerticalLayoutGroup>();
+                vlg.padding = new RectOffset(18, 18, 16, 16);
+                vlg.spacing = 10f;
+                vlg.childAlignment = TextAnchor.UpperLeft;
+                vlg.childControlHeight = true;
+                vlg.childControlWidth = true;
+                vlg.childForceExpandHeight = false;
+                vlg.childForceExpandWidth = true;
+
+                rootGo.transform.SetAsLastSibling();
+            }
+
+            var root = _rewardPanelRoot.transform;
+            var builtinFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (_rewardTitleText == null)
+            {
+                var titleGo = new GameObject("TitleText", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+                titleGo.transform.SetParent(root, false);
+                _rewardTitleText = titleGo.GetComponent<Text>();
+                _rewardTitleText.font = builtinFont;
+                _rewardTitleText.fontSize = 26;
+                _rewardTitleText.fontStyle = FontStyle.Bold;
+                _rewardTitleText.alignment = TextAnchor.UpperLeft;
+                _rewardTitleText.color = Color.white;
+                var le = titleGo.GetComponent<LayoutElement>();
+                le.preferredHeight = 40f;
+            }
+
+            if (_rewardStatusText == null)
+            {
+                var infoGo = new GameObject("StatusText", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+                infoGo.transform.SetParent(root, false);
+                _rewardStatusText = infoGo.GetComponent<Text>();
+                _rewardStatusText.font = builtinFont;
+                _rewardStatusText.fontSize = 18;
+                _rewardStatusText.alignment = TextAnchor.UpperLeft;
+                _rewardStatusText.color = new Color(0.86f, 0.92f, 0.98f, 0.95f);
+                var le = infoGo.GetComponent<LayoutElement>();
+                le.preferredHeight = 30f;
+            }
+
+            if (_rewardChoicesRoot == null)
+            {
+                var rowGo = new GameObject("ChoicesRow", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+                rowGo.transform.SetParent(root, false);
+                _rewardChoicesRoot = rowGo.transform;
+                var hlg = rowGo.GetComponent<HorizontalLayoutGroup>();
+                hlg.spacing = 14f;
+                hlg.childAlignment = TextAnchor.UpperCenter;
+                hlg.childControlWidth = true;
+                hlg.childControlHeight = true;
+                hlg.childForceExpandWidth = true;
+                hlg.childForceExpandHeight = false;
+                var le = rowGo.GetComponent<LayoutElement>();
+                le.preferredHeight = 250f;
+                le.flexibleWidth = 1f;
+            }
+        }
+
+        private void RebuildRewardChoicesUI()
+        {
+            EnsureRewardPanel();
+            if (_rewardPanelRoot != null)
+                _rewardPanelRoot.SetActive(_isRewardSelectionPending);
+            if (!_isRewardSelectionPending || _rewardChoicesRoot == null)
+                return;
+
+            _rewardTitleText.text = "카드 보상 선택";
+            _rewardStatusText.text = "3턴 보상: 카드 1장을 선택하세요.";
+
+            for (int i = _rewardChoicesRoot.childCount - 1; i >= 0; i--)
+                Destroy(_rewardChoicesRoot.GetChild(i).gameObject);
+
+            for (int i = 0; i < _pendingRewardChoices.Count; i++)
+            {
+                int cardIndex = _pendingRewardChoices[i];
+                var btn = CreateRuntimeButton(_rewardChoicesRoot, "선택");
+                var rt = btn.transform as RectTransform;
+                if (rt != null)
+                    rt.sizeDelta = new Vector2(280f, 220f);
+
+                if (CardRegistry.TryGetDefinition(cardIndex, out var def) && def != null)
+                {
+                    string title = string.IsNullOrWhiteSpace(def.name) ? def.id : def.name;
+                    string desc = string.IsNullOrWhiteSpace(def.description) ? "효과 설명 없음" : def.description;
+                    var label = btn.GetComponentInChildren<Text>(true);
+                    if (label != null)
+                    {
+                        label.alignment = TextAnchor.UpperLeft;
+                        label.fontSize = 15;
+                        label.text = $"{title}\n\n{desc}\n\n[선택]";
+                    }
+                }
+                else
+                {
+                    var label = btn.GetComponentInChildren<Text>(true);
+                    if (label != null)
+                        label.text = $"Card {cardIndex}\n\n[선택]";
+                }
+
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(() => OnRewardChoiceSelected(cardIndex));
+            }
+        }
+
+        private void OnRewardChoiceSelected(int rewardCardIndex)
+        {
+            if (!_isRewardSelectionPending || _cardDeck == null)
+                return;
+
             if (!_cardDeck.TryAddCardToDiscard(rewardCardIndex))
                 return;
 
@@ -703,7 +872,34 @@ namespace FourMelds.Combat
             if (CardRegistry.TryGetDefinition(rewardCardIndex, out var def) && def != null && !string.IsNullOrWhiteSpace(def.name))
                 rewardName = def.name;
 
-            Debug.Log($"[REWARD] Turn {_turnState.TurnIndex}: gained '{rewardName}' (added to discard).");
+            Debug.Log($"[REWARD] Selected '{rewardName}' (added to discard).");
+            CloseRewardPanel();
+        }
+
+        private void CloseRewardPanel()
+        {
+            _isRewardSelectionPending = false;
+            _pendingRewardChoices.Clear();
+            if (_rewardPanelRoot != null)
+                _rewardPanelRoot.SetActive(false);
+            SetRewardFocusUI(enabled: false);
+            UpdateCardPanelState();
+            RefreshTurnStatus();
+        }
+
+        private void SetRewardFocusUI(bool enabled)
+        {
+            EnsureExchangeDimTargets();
+            float alpha = enabled ? 0.32f : 1f;
+            for (int i = 0; i < _exchangeDimCanvasGroups.Count; i++)
+            {
+                var cg = _exchangeDimCanvasGroups[i];
+                if (cg == null)
+                    continue;
+                cg.alpha = alpha;
+                cg.interactable = !enabled;
+                cg.blocksRaycasts = !enabled;
+            }
         }
 
         private void BuildRewardPool()
@@ -764,6 +960,9 @@ namespace FourMelds.Combat
         private void OnHandCardClicked(int handIndex)
         {
             if (_turnState == null || _turnState.Phase != TurnPhase.CardUse)
+                return;
+
+            if (_isRewardSelectionPending)
                 return;
 
             if (_isExchangePending)
@@ -1170,6 +1369,8 @@ namespace FourMelds.Combat
             if (_handTilesView != null && go == _handTilesView.gameObject)
                 return;
             if (_exchangePanelRoot != null && go == _exchangePanelRoot)
+                return;
+            if (_rewardPanelRoot != null && go == _rewardPanelRoot)
                 return;
 
             var cg = go.GetComponent<CanvasGroup>();
