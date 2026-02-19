@@ -825,13 +825,13 @@ namespace FourMelds.Combat
                 footerRow = rowGo.transform;
                 var hlg = rowGo.GetComponent<HorizontalLayoutGroup>();
                 hlg.spacing = 8f;
-                hlg.childAlignment = TextAnchor.MiddleRight;
+                hlg.childAlignment = TextAnchor.MiddleCenter;
                 hlg.childControlHeight = true;
                 hlg.childControlWidth = false;
                 hlg.childForceExpandHeight = false;
                 hlg.childForceExpandWidth = false;
                 var le = rowGo.GetComponent<LayoutElement>();
-                le.preferredHeight = 40f;
+                le.preferredHeight = 64f;
             }
 
             if (_rewardSkipButton == null)
@@ -842,15 +842,18 @@ namespace FourMelds.Combat
                 var le = _rewardSkipButton.GetComponent<LayoutElement>();
                 if (le == null)
                     le = _rewardSkipButton.gameObject.AddComponent<LayoutElement>();
-                le.minWidth = 170f;
-                le.preferredWidth = 170f;
+                le.minWidth = 260f;
+                le.preferredWidth = 260f;
+                le.minHeight = 56f;
+                le.preferredHeight = 56f;
                 le.flexibleWidth = 0f;
+                le.flexibleHeight = 0f;
 
                 var text = _rewardSkipButton.GetComponentInChildren<Text>(true);
                 if (text != null)
                 {
                     text.text = "보상 건너뛰기";
-                    text.fontSize = 16;
+                    text.fontSize = 20;
                     text.alignment = TextAnchor.MiddleCenter;
                 }
 
