@@ -105,6 +105,37 @@ namespace FourMelds.Cards
             return true;
         }
 
+        public static bool TryApplySetTileCount(
+            TurnState state,
+            int selectedTileId,
+            int targetCount,
+            out string failReason)
+        {
+            failReason = null;
+
+            if (state == null)
+            {
+                failReason = "TurnState is null";
+                return false;
+            }
+
+            targetCount = Math.Max(1, targetCount);
+            int current = state.CountOf(selectedTileId);
+            if (current <= 0)
+            {
+                failReason = $"Tile not in hand: {selectedTileId}";
+                return false;
+            }
+
+            for (int i = 0; i < current; i++)
+                state.TryRemoveTile(selectedTileId);
+            for (int i = 0; i < targetCount; i++)
+                state.AddHandTile(selectedTileId);
+
+            state.SortHandTiles();
+            return true;
+        }
+
         private static Func<int, bool> BuildPredicate(CardDefinition definition)
         {
             if (definition == null || string.IsNullOrWhiteSpace(definition.suit))

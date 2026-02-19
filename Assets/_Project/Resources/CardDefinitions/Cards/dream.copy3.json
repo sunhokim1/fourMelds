@@ -1,0 +1,10 @@
+{
+  "id": "dream.copy3",
+  "name": "몽환 복제",
+  "description": "손패에서 패 종류 1개를 선택합니다. 선택한 패를 정확히 3장으로 맞춥니다.",
+  "rarity": 4,
+  "suitTheme": 0,
+  "action": "setcount",
+  "suit": "random",
+  "count": 3
+}

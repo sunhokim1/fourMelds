@@ -16,6 +16,8 @@ namespace FourMelds.Cards
                     return $"{SuitLabel(def)} {count}장";
                 case "exchange":
                     return $"{count}장 교환";
+                case "setcount":
+                    return $"{count}장 복제";
                 default:
                     return string.IsNullOrWhiteSpace(def.id) ? "카드" : def.id;
             }
@@ -48,6 +50,8 @@ namespace FourMelds.Cards
 
                 case "exchange":
                     return $"손패 {count}장을 랜덤으로 교환합니다. 교환 후 {count}장을 다시 쯔모합니다.";
+                case "setcount":
+                    return $"손패에서 패 종류 1개를 선택합니다. 선택한 패를 정확히 {count}장으로 맞춥니다.";
 
                 default:
                     return "효과 없음";

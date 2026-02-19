@@ -128,7 +128,7 @@ public sealed class CardPanelController : MonoBehaviour
         changed |= TryAssignIfNull(ref rarityFrameCommonSprite, $"{UiArtDir}/card_common.png");
         changed |= TryAssignIfNull(ref rarityFrameRareSprite, $"{UiArtDir}/card_rare.png");
         changed |= TryAssignIfNull(ref rarityFrameEpicSprite, $"{UiArtDir}/card_epic.png");
-        changed |= TryAssignIfNull(ref rarityFrameLegendarySprite, $"{UiArtDir}/card_regendary.png");
+        changed |= TryAssignIfNull(ref rarityFrameLegendarySprite, $"{UiArtDir}/card_legendary.png");
         changed |= TryAssignIfNull(ref rarityFrameDreamSprite, $"{UiArtDir}/card_dream.png");
 
         if (changed)

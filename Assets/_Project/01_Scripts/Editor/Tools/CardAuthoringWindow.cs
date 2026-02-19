@@ -14,7 +14,7 @@ public sealed class CardAuthoringWindow : EditorWindow
         "Assets/_Project/04_Art/UI/card_common.png",
         "Assets/_Project/04_Art/UI/card_rare.png",
         "Assets/_Project/04_Art/UI/card_epic.png",
-        "Assets/_Project/04_Art/UI/card_regendary.png",
+        "Assets/_Project/04_Art/UI/card_legendary.png",
         "Assets/_Project/04_Art/UI/card_dream.png",
     };
 

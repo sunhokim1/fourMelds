@@ -16,6 +16,13 @@ namespace FourMelds.Combat
 {
     public sealed class TurnLoopController : MonoBehaviour
     {
+        private enum PendingTileSelectionMode
+        {
+            None = 0,
+            Exchange = 1,
+            SetTileCount = 2,
+        }
+
         [SerializeField] private ActionMenuController _actionMenu;
         [SerializeField] private CardPanelController _cardPanel;
         [SerializeField] private HandTilesView _handTilesView;
@@ -85,6 +92,7 @@ namespace FourMelds.Combat
         private int _pendingExchangeCardIndex = -1;
         private int _pendingExchangeMaxCount;
         private CardDefinition _pendingExchangeDefinition;
+        private PendingTileSelectionMode _pendingTileSelectionMode;
         private readonly System.Collections.Generic.List<int> _pendingExchangeTiles = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.List<TileView> _pendingExchangeTileViews = new System.Collections.Generic.List<TileView>();
         private readonly System.Collections.Generic.List<GameObject> _exchangePreviewTiles = new System.Collections.Generic.List<GameObject>();
@@ -1057,6 +1065,12 @@ namespace FourMelds.Combat
                 return;
             }
 
+            if (TryGetSetTileCountDefinition(cardIndex, out var setCountDef, out var targetCount))
+            {
+                BeginSetTileCountSelection(handIndex, cardIndex, setCountDef, targetCount);
+                return;
+            }
+
             if (!CardPlayService.TryPlay(cardIndex, _turnState, out var reason))
             {
                 Debug.LogWarning($"[CARD] Fail idx={cardIndex} reason={reason}");
@@ -1088,9 +1102,25 @@ namespace FourMelds.Combat
             return true;
         }
 
+        private bool TryGetSetTileCountDefinition(int cardIndex, out CardDefinition definition, out int targetCount)
+        {
+            definition = null;
+            targetCount = 0;
+
+            if (!CardRegistry.TryGetDefinition(cardIndex, out definition) || definition == null)
+                return false;
+
+            if (!string.Equals(definition.action, "setcount", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            targetCount = Mathf.Max(1, definition.count);
+            return true;
+        }
+
         private void BeginExchangeSelection(int handIndex, int cardIndex, CardDefinition definition, int maxCount)
         {
             _isExchangePending = true;
+            _pendingTileSelectionMode = PendingTileSelectionMode.Exchange;
             _pendingExchangeCardHandIndex = handIndex;
             _pendingExchangeCardIndex = cardIndex;
             _pendingExchangeDefinition = definition;
@@ -1104,6 +1134,25 @@ namespace FourMelds.Combat
             UpdateExchangePanel();
             UpdateCardPanelState();
             Debug.Log($"[CARD] Exchange select start card={cardIndex} max={maxCount}");
+        }
+
+        private void BeginSetTileCountSelection(int handIndex, int cardIndex, CardDefinition definition, int targetCount)
+        {
+            _isExchangePending = true;
+            _pendingTileSelectionMode = PendingTileSelectionMode.SetTileCount;
+            _pendingExchangeCardHandIndex = handIndex;
+            _pendingExchangeCardIndex = cardIndex;
+            _pendingExchangeDefinition = definition;
+            _pendingExchangeMaxCount = 1;
+            _pendingExchangeTiles.Clear();
+            _pendingExchangeTileViews.Clear();
+            ClearExchangePreviewTiles();
+
+            EnsureExchangePanel();
+            SetExchangeFocusUI(enabled: true);
+            UpdateExchangePanel();
+            UpdateCardPanelState();
+            Debug.Log($"[CARD] SetCount select start card={cardIndex} target={targetCount}");
         }
 
         private void HandleTileViewClicked(TileView tileView, PointerEventData.InputButton button)
@@ -1174,22 +1223,43 @@ namespace FourMelds.Combat
                 return;
             }
 
-            if (!CardPlayService.TryApplyExchange(_turnState, _pendingExchangeTiles, _pendingExchangeDefinition, out var reason))
+            bool applied;
+            string reason;
+            switch (_pendingTileSelectionMode)
             {
-                Debug.LogWarning($"[CARD] Exchange failed: {reason}");
+                case PendingTileSelectionMode.Exchange:
+                    applied = CardPlayService.TryApplyExchange(_turnState, _pendingExchangeTiles, _pendingExchangeDefinition, out reason);
+                    break;
+                case PendingTileSelectionMode.SetTileCount:
+                    applied = CardPlayService.TryApplySetTileCount(
+                        _turnState,
+                        _pendingExchangeTiles[0],
+                        Mathf.Max(1, _pendingExchangeDefinition?.count ?? 1),
+                        out reason);
+                    break;
+                default:
+                    applied = false;
+                    reason = "Unknown selection mode";
+                    break;
+            }
+
+            if (!applied)
+            {
+                Debug.LogWarning($"[CARD] Selection effect failed: {reason}");
                 return;
             }
 
             if (!_cardDeck.TryPlayHandCard(_pendingExchangeCardHandIndex, out _))
             {
-                Debug.LogWarning("[CARD] Exchange card consume failed.");
+                Debug.LogWarning("[CARD] Selection card consume failed.");
                 return;
             }
 
-            Debug.Log($"[CARD] Exchange applied card={_pendingExchangeCardIndex} count={_pendingExchangeTiles.Count}");
+            Debug.Log($"[CARD] Selection effect applied card={_pendingExchangeCardIndex} mode={_pendingTileSelectionMode} selected={_pendingExchangeTiles.Count}");
             _pendingExchangeTileViews.Clear();
             _pendingExchangeTiles.Clear();
             _isExchangePending = false;
+            _pendingTileSelectionMode = PendingTileSelectionMode.None;
             _pendingExchangeCardHandIndex = -1;
             _pendingExchangeCardIndex = -1;
             _pendingExchangeMaxCount = 0;
@@ -1218,6 +1288,7 @@ namespace FourMelds.Combat
             _pendingExchangeTileViews.Clear();
             _pendingExchangeTiles.Clear();
             _isExchangePending = false;
+            _pendingTileSelectionMode = PendingTileSelectionMode.None;
             _pendingExchangeCardHandIndex = -1;
             _pendingExchangeCardIndex = -1;
             _pendingExchangeMaxCount = 0;
@@ -1225,7 +1296,7 @@ namespace FourMelds.Combat
             ClearExchangePreviewTiles();
             SetExchangeFocusUI(enabled: false);
 
-            Debug.Log($"[CARD] Exchange cancelled ({reason})");
+            Debug.Log($"[CARD] Selection cancelled ({reason})");
             UpdateExchangePanel();
             UpdateCardPanelState();
         }
@@ -1245,16 +1316,28 @@ namespace FourMelds.Combat
                 return;
             }
 
+            bool isSetCountMode = _pendingTileSelectionMode == PendingTileSelectionMode.SetTileCount;
+            int targetCount = Mathf.Max(1, _pendingExchangeDefinition?.count ?? 1);
+
             if (_exchangeTitleText != null)
-                _exchangeTitleText.text = $"교환 패 선택 (최대 {_pendingExchangeMaxCount}장)";
+                _exchangeTitleText.text = isSetCountMode
+                    ? $"복사 대상 패 선택 (정확히 {targetCount}장)"
+                    : $"교환 패 선택 (최대 {_pendingExchangeMaxCount}장)";
 
             if (_exchangeStatusText != null)
             {
-                _exchangeStatusText.text = $"선택 {_pendingExchangeTiles.Count}/{_pendingExchangeMaxCount} · 클릭으로 선택/해제";
+                _exchangeStatusText.text = isSetCountMode
+                    ? $"선택 {_pendingExchangeTiles.Count}/1 · 클릭으로 선택/해제"
+                    : $"선택 {_pendingExchangeTiles.Count}/{_pendingExchangeMaxCount} · 클릭으로 선택/해제";
             }
 
             if (_exchangeConfirmButton != null)
+            {
                 _exchangeConfirmButton.interactable = _pendingExchangeTiles.Count > 0;
+                SetRuntimeButtonLabel(_exchangeConfirmButton, isSetCountMode ? $"{targetCount}장으로 맞추기" : "교환");
+            }
+            if (_exchangeCancelButton != null)
+                SetRuntimeButtonLabel(_exchangeCancelButton, "취소");
 
             RebuildExchangeTilePreviews();
         }
@@ -1519,6 +1602,16 @@ namespace FourMelds.Combat
                     Destroy(go);
             }
             _exchangePreviewTiles.Clear();
+        }
+
+        private static void SetRuntimeButtonLabel(Button button, string label)
+        {
+            if (button == null)
+                return;
+
+            var text = button.GetComponentInChildren<Text>(true);
+            if (text != null)
+                text.text = label ?? string.Empty;
         }
 
         private static Button CreateRuntimeButton(Transform parent, string label)

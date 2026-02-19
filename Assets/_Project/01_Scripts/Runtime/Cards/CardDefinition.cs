@@ -10,7 +10,7 @@ namespace FourMelds.Cards
         public string description;
         public int rarity;
         public int suitTheme;
-        public string action;      // draw, exchange
+        public string action;      // draw, exchange, setcount
         public string suit;        // manzu, souzu, pinzu, honor, random, number
         public int count;          // primary amount
         public int minRank;        // optional for suit=number
