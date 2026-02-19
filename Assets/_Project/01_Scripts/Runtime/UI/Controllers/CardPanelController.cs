@@ -239,6 +239,14 @@ public sealed class CardPanelController : MonoBehaviour
         EnsureButtonLayout(btn, 1f);
         float previewScale = Mathf.Max(0.1f, sizeScale);
         btn.transform.localScale = new Vector3(previewScale, previewScale, 1f);
+        var le = btn.GetComponent<LayoutElement>();
+        if (le != null && previewScale > 1f)
+        {
+            le.minWidth *= previewScale;
+            le.preferredWidth *= previewScale;
+            le.minHeight *= previewScale;
+            le.preferredHeight *= previewScale;
+        }
         btn.interactable = true;
         TryRenderCardPreview(btn, registryIndex);
         SetCardInteractableState(btn, true);

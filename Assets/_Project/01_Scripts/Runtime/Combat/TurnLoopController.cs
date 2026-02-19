@@ -870,7 +870,7 @@ namespace FourMelds.Combat
                 hlg = _rewardChoicesRoot.gameObject.AddComponent<HorizontalLayoutGroup>();
 
             // Keep prefab-authored card size instead of forcing width/height from row layout.
-            hlg.spacing = _rewardChoiceSpacing;
+            hlg.spacing = Mathf.Max(50f, _rewardChoiceSpacing);
             hlg.childAlignment = TextAnchor.UpperCenter;
             hlg.childControlWidth = false;
             hlg.childControlHeight = false;
