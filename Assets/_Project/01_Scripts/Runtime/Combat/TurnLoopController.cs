@@ -875,8 +875,8 @@ namespace FourMelds.Combat
             hlg.childControlHeight = false;
             hlg.childForceExpandWidth = false;
             hlg.childForceExpandHeight = false;
-            hlg.childScaleWidth = false;
-            hlg.childScaleHeight = false;
+            hlg.childScaleWidth = true;
+            hlg.childScaleHeight = true;
         }
 
         private void RebuildRewardChoicesUI()

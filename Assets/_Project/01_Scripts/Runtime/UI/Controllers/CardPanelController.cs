@@ -236,7 +236,9 @@ public sealed class CardPanelController : MonoBehaviour
 
         var btn = Instantiate(buttonPrefab, parent);
         btn.gameObject.SetActive(true);
-        EnsureButtonLayout(btn, sizeScale);
+        EnsureButtonLayout(btn, 1f);
+        float previewScale = Mathf.Max(0.1f, sizeScale);
+        btn.transform.localScale = new Vector3(previewScale, previewScale, 1f);
         btn.interactable = true;
         TryRenderCardPreview(btn, registryIndex);
         SetCardInteractableState(btn, true);
