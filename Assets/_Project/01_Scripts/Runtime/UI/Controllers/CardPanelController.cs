@@ -22,6 +22,7 @@ public sealed class CardPanelController : MonoBehaviour
 
     [Header("Card Look")]
     [SerializeField] private bool usePrefabCardSize = true;
+    [SerializeField] [Range(0.8f, 1.6f)] private float prefabCardSizeScale = 1.15f;
     [SerializeField] private float cardWidth = 180f;
     [SerializeField] private float cardHeight = 240f;
     [SerializeField] private float cardSpacing = 18f;
@@ -316,8 +317,10 @@ public sealed class CardPanelController : MonoBehaviour
         float targetHeight = cardHeight;
         if (usePrefabCardSize && rt != null)
         {
-            targetWidth = rt.sizeDelta.x;
-            targetHeight = rt.sizeDelta.y;
+            float scale = Mathf.Max(0.1f, prefabCardSizeScale);
+            targetWidth = rt.sizeDelta.x * scale;
+            targetHeight = rt.sizeDelta.y * scale;
+            rt.sizeDelta = new Vector2(targetWidth, targetHeight);
         }
         else if (rt != null)
         {
