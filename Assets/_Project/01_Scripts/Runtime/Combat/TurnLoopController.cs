@@ -735,7 +735,10 @@ namespace FourMelds.Combat
         private void EnsureRewardPanel()
         {
             if (_rewardPanelRoot != null && _rewardTitleText != null && _rewardStatusText != null && _rewardChoicesRoot != null && _rewardSkipButton != null)
+            {
+                EnsureRewardChoicesLayout();
                 return;
+            }
 
             var parent = FindRootCanvasRect();
             if (parent == null)
@@ -751,7 +754,7 @@ namespace FourMelds.Combat
                 rootRt.anchorMin = new Vector2(0.5f, 0.5f);
                 rootRt.anchorMax = new Vector2(0.5f, 0.5f);
                 rootRt.pivot = new Vector2(0.5f, 0.5f);
-                rootRt.sizeDelta = new Vector2(920f, 360f);
+                rootRt.sizeDelta = new Vector2(980f, 560f);
                 rootRt.anchoredPosition = Vector2.zero;
 
                 var bg = rootGo.GetComponent<Image>();
@@ -804,17 +807,13 @@ namespace FourMelds.Combat
                 var rowGo = new GameObject("ChoicesRow", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
                 rowGo.transform.SetParent(root, false);
                 _rewardChoicesRoot = rowGo.transform;
-                var hlg = rowGo.GetComponent<HorizontalLayoutGroup>();
-                hlg.spacing = 14f;
-                hlg.childAlignment = TextAnchor.UpperCenter;
-                hlg.childControlWidth = true;
-                hlg.childControlHeight = true;
-                hlg.childForceExpandWidth = true;
-                hlg.childForceExpandHeight = false;
                 var le = rowGo.GetComponent<LayoutElement>();
-                le.preferredHeight = 250f;
+                le.minHeight = 0f;
+                le.preferredHeight = -1f;
+                le.flexibleHeight = 1f;
                 le.flexibleWidth = 1f;
             }
+            EnsureRewardChoicesLayout();
 
             Transform footerRow = root.Find("RewardFooterRow");
             if (footerRow == null)
@@ -838,10 +837,45 @@ namespace FourMelds.Combat
 
             if (_rewardSkipButton != null)
             {
+                var le = _rewardSkipButton.GetComponent<LayoutElement>();
+                if (le == null)
+                    le = _rewardSkipButton.gameObject.AddComponent<LayoutElement>();
+                le.minWidth = 170f;
+                le.preferredWidth = 170f;
+                le.flexibleWidth = 0f;
+
+                var text = _rewardSkipButton.GetComponentInChildren<Text>(true);
+                if (text != null)
+                {
+                    text.text = "보상 건너뛰기";
+                    text.fontSize = 16;
+                    text.alignment = TextAnchor.MiddleCenter;
+                }
+
                 _rewardSkipButton.onClick.RemoveListener(OnRewardSkipClicked);
                 _rewardSkipButton.onClick.AddListener(OnRewardSkipClicked);
                 _rewardSkipButton.interactable = false;
             }
+        }
+
+        private void EnsureRewardChoicesLayout()
+        {
+            if (_rewardChoicesRoot == null)
+                return;
+
+            var hlg = _rewardChoicesRoot.GetComponent<HorizontalLayoutGroup>();
+            if (hlg == null)
+                hlg = _rewardChoicesRoot.gameObject.AddComponent<HorizontalLayoutGroup>();
+
+            // Keep prefab-authored card size instead of forcing width/height from row layout.
+            hlg.spacing = 14f;
+            hlg.childAlignment = TextAnchor.UpperCenter;
+            hlg.childControlWidth = false;
+            hlg.childControlHeight = false;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = false;
+            hlg.childScaleWidth = false;
+            hlg.childScaleHeight = false;
         }
 
         private void RebuildRewardChoicesUI()
@@ -861,32 +895,25 @@ namespace FourMelds.Combat
             for (int i = 0; i < _pendingRewardChoices.Count; i++)
             {
                 int cardIndex = _pendingRewardChoices[i];
-                var btn = CreateRuntimeButton(_rewardChoicesRoot, "선택");
-                var rt = btn.transform as RectTransform;
-                if (rt != null)
-                    rt.sizeDelta = new Vector2(280f, 220f);
+                Button btn = null;
+                if (_cardPanel != null)
+                    btn = _cardPanel.CreatePreviewCardButton(_rewardChoicesRoot, cardIndex, () => OnRewardChoiceSelected(cardIndex));
+                if (btn == null)
+                    btn = CreateRuntimeButton(_rewardChoicesRoot, string.Empty);
 
-                if (CardRegistry.TryGetDefinition(cardIndex, out var def) && def != null)
+                var label = btn.GetComponentInChildren<Text>(true);
+                if (_cardPanel == null || btn.GetComponent<CardView>() == null)
                 {
-                    string title = string.IsNullOrWhiteSpace(def.name) ? def.id : def.name;
-                    string desc = string.IsNullOrWhiteSpace(def.description) ? "효과 설명 없음" : def.description;
-                    var label = btn.GetComponentInChildren<Text>(true);
                     if (label != null)
                     {
-                        label.alignment = TextAnchor.UpperLeft;
-                        label.fontSize = 15;
-                        label.text = $"{title}\n\n{desc}\n\n[선택]";
+                        label.gameObject.SetActive(true);
+                        if (CardRegistry.TryGetDefinition(cardIndex, out var def) && def != null)
+                            label.text = string.IsNullOrWhiteSpace(def.name) ? def.id : def.name;
+                        else
+                            label.text = $"Card {cardIndex}";
+                        label.alignment = TextAnchor.MiddleCenter;
                     }
                 }
-                else
-                {
-                    var label = btn.GetComponentInChildren<Text>(true);
-                    if (label != null)
-                        label.text = $"Card {cardIndex}\n\n[선택]";
-                }
-
-                btn.onClick.RemoveAllListeners();
-                btn.onClick.AddListener(() => OnRewardChoiceSelected(cardIndex));
             }
 
             if (_rewardSkipButton != null)

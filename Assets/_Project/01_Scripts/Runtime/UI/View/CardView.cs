@@ -4,6 +4,9 @@ using UnityEngine.UI;
 public sealed class CardView : MonoBehaviour
 {
     private const float BorderSize = 10f;
+    private const float BaseCardHeight = 240f;
+    private const float MinLayoutScale = 0.7f;
+    private const float MaxLayoutScale = 2.2f;
 
     [Header("Skin Sprites")]
     [SerializeField] private Sprite cardFrameSprite;
@@ -44,6 +47,7 @@ public sealed class CardView : MonoBehaviour
     private Graphic _simpleCardGraphic;
     private RawImage _simpleCardRawImage;
     private static Font _cachedJuaFont;
+    private float _lastLayoutScale = -1f;
 
     private Color _normalColor = new Color(0.12f, 0.16f, 0.24f, 0.94f);
     private Color _hoverColor = new Color(0.18f, 0.24f, 0.34f, 0.98f);
@@ -63,6 +67,14 @@ public sealed class CardView : MonoBehaviour
 
         EnsureScaffold();
         ApplySkinSprites();
+    }
+
+    private void OnRectTransformDimensionsChange()
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        ApplyScaledSectionLayoutIfNeeded(force: false);
     }
 
     public void EnsureScaffold()
@@ -106,6 +118,7 @@ public sealed class CardView : MonoBehaviour
             EnsureDescriptionPanel();
             EnsureRarityGem();
         }
+        ApplyScaledSectionLayoutIfNeeded(force: true);
 
         DisableLegacyRootText();
         ApplyPreferredTextFonts();
@@ -246,14 +259,12 @@ public sealed class CardView : MonoBehaviour
     private void EnsureNameBanner()
     {
         var bannerRt = EnsureRectChild("NameBanner", _contentRoot, out bool created);
-        if (created)
-        {
-            bannerRt.anchorMin = new Vector2(0f, 1f);
-            bannerRt.anchorMax = new Vector2(1f, 1f);
-            bannerRt.pivot = new Vector2(0.5f, 1f);
-            bannerRt.anchoredPosition = Vector2.zero;
-            bannerRt.sizeDelta = new Vector2(0f, 34f);
-        }
+        float s = GetLayoutScale();
+        bannerRt.anchorMin = new Vector2(0f, 1f);
+        bannerRt.anchorMax = new Vector2(1f, 1f);
+        bannerRt.pivot = new Vector2(0.5f, 1f);
+        bannerRt.anchoredPosition = Vector2.zero;
+        bannerRt.sizeDelta = new Vector2(0f, 34f * s);
 
         _nameBannerImage = EnsureImage(bannerRt.gameObject, new Color(0.20f, 0.26f, 0.40f, 0.90f));
         _nameText = EnsureTextChild(
@@ -264,22 +275,27 @@ public sealed class CardView : MonoBehaviour
             new Color(0.95f, 0.98f, 1f, 1f),
             new Vector2(10f, 2f),
             new Vector2(-10f, -2f));
+        if (_nameText != null)
+        {
+            var rt = _nameText.rectTransform;
+            rt.offsetMin = new Vector2(10f * s, 2f * s);
+            rt.offsetMax = new Vector2(-10f * s, -2f * s);
+        }
 
         _nameText.horizontalOverflow = HorizontalWrapMode.Overflow;
         _nameText.verticalOverflow = VerticalWrapMode.Truncate;
+        _nameText.fontSize = Mathf.Clamp(Mathf.RoundToInt(18f * s), 12, 36);
     }
 
     private void EnsureArtFrame()
     {
         var artRt = EnsureRectChild("ArtFrame", _contentRoot, out bool created);
-        if (created)
-        {
-            artRt.anchorMin = new Vector2(0f, 1f);
-            artRt.anchorMax = new Vector2(1f, 1f);
-            artRt.pivot = new Vector2(0.5f, 1f);
-            artRt.anchoredPosition = new Vector2(0f, -40f);
-            artRt.sizeDelta = new Vector2(0f, 94f);
-        }
+        float s = GetLayoutScale();
+        artRt.anchorMin = new Vector2(0f, 1f);
+        artRt.anchorMax = new Vector2(1f, 1f);
+        artRt.pivot = new Vector2(0.5f, 1f);
+        artRt.anchoredPosition = new Vector2(0f, -40f * s);
+        artRt.sizeDelta = new Vector2(0f, 94f * s);
 
         _artFrameImage = EnsureImage(artRt.gameObject, new Color(0.10f, 0.12f, 0.16f, 0.76f));
     }
@@ -287,14 +303,12 @@ public sealed class CardView : MonoBehaviour
     private void EnsureDescriptionPanel()
     {
         var descRt = EnsureRectChild("DescriptionPanel", _contentRoot, out bool created);
-        if (created)
-        {
-            descRt.anchorMin = new Vector2(0f, 0f);
-            descRt.anchorMax = new Vector2(1f, 0f);
-            descRt.pivot = new Vector2(0.5f, 0f);
-            descRt.anchoredPosition = new Vector2(0f, 0f);
-            descRt.sizeDelta = new Vector2(0f, 72f);
-        }
+        float s = GetLayoutScale();
+        descRt.anchorMin = new Vector2(0f, 0f);
+        descRt.anchorMax = new Vector2(1f, 0f);
+        descRt.pivot = new Vector2(0.5f, 0f);
+        descRt.anchoredPosition = Vector2.zero;
+        descRt.sizeDelta = new Vector2(0f, 72f * s);
 
         _descriptionPanelImage = EnsureImage(descRt.gameObject, new Color(0.14f, 0.19f, 0.28f, 0.88f));
         _descriptionText = EnsureTextChild(
@@ -305,24 +319,53 @@ public sealed class CardView : MonoBehaviour
             new Color(0.88f, 0.92f, 1f, 1f),
             new Vector2(8f, 6f),
             new Vector2(-8f, -6f));
+        if (_descriptionText != null)
+        {
+            var rt = _descriptionText.rectTransform;
+            rt.offsetMin = new Vector2(8f * s, 6f * s);
+            rt.offsetMax = new Vector2(-8f * s, -6f * s);
+        }
 
         _descriptionText.horizontalOverflow = HorizontalWrapMode.Wrap;
         _descriptionText.verticalOverflow = VerticalWrapMode.Truncate;
+        _descriptionText.fontSize = Mathf.Clamp(Mathf.RoundToInt(14f * s), 10, 30);
+    }
+
+    private float GetLayoutScale()
+    {
+        var rootRt = transform as RectTransform;
+        if (rootRt == null || rootRt.rect.height <= 1f)
+            return 1f;
+        return Mathf.Clamp(rootRt.rect.height / BaseCardHeight, MinLayoutScale, MaxLayoutScale);
     }
 
     private void EnsureRarityGem()
     {
-        var gemRt = EnsureRectChild("RarityGem", _contentRoot, out bool created);
-        if (created)
-        {
-            gemRt.anchorMin = new Vector2(1f, 1f);
-            gemRt.anchorMax = new Vector2(1f, 1f);
-            gemRt.pivot = new Vector2(1f, 1f);
-            gemRt.anchoredPosition = new Vector2(-6f, -6f);
-            gemRt.sizeDelta = new Vector2(16f, 16f);
-        }
+        var gemRt = EnsureRectChild("RarityGem", _contentRoot);
+        float s = GetLayoutScale();
+        gemRt.anchorMin = new Vector2(1f, 1f);
+        gemRt.anchorMax = new Vector2(1f, 1f);
+        gemRt.pivot = new Vector2(1f, 1f);
+        gemRt.anchoredPosition = new Vector2(-6f * s, -6f * s);
+        gemRt.sizeDelta = new Vector2(16f * s, 16f * s);
 
         _rarityGemImage = EnsureImage(gemRt.gameObject, new Color(0.83f, 0.89f, 1f, 0.95f));
+    }
+
+    private void ApplyScaledSectionLayoutIfNeeded(bool force)
+    {
+        if (_usingSimpleLayout || _contentRoot == null)
+            return;
+
+        float scale = GetLayoutScale();
+        if (!force && Mathf.Abs(scale - _lastLayoutScale) < 0.01f)
+            return;
+
+        _lastLayoutScale = scale;
+        EnsureNameBanner();
+        EnsureArtFrame();
+        EnsureDescriptionPanel();
+        EnsureRarityGem();
     }
 
     private void DisableLegacyRootText()

@@ -214,6 +214,42 @@ public sealed class CardPanelController : MonoBehaviour
             LayoutRebuilder.MarkLayoutForRebuild(rt);
     }
 
+    public bool TryRenderCardPreview(Button targetButton, int registryIndex)
+    {
+        if (targetButton == null)
+            return false;
+
+        var cards = CardRegistry.DefaultCards;
+        ICardEffect card = registryIndex >= 0 && registryIndex < cards.Count
+            ? cards[registryIndex]
+            : null;
+
+        ResolveCardDisplayData(registryIndex, card, out string name, out string desc, out int rarityTier);
+        BindCardVisual(targetButton, name, desc, rarityTier);
+        return true;
+    }
+
+    public Button CreatePreviewCardButton(Transform parent, int registryIndex, Action onClick)
+    {
+        if (buttonPrefab == null || parent == null)
+            return null;
+
+        var btn = Instantiate(buttonPrefab, parent);
+        btn.gameObject.SetActive(true);
+        EnsureButtonLayout(btn);
+        btn.interactable = true;
+        TryRenderCardPreview(btn, registryIndex);
+        SetCardInteractableState(btn, true);
+        SetCardHoverState(btn, false);
+        SetCardDraggingState(btn, dragging: false, isValidDropZone: false);
+
+        btn.onClick.RemoveAllListeners();
+        if (onClick != null)
+            btn.onClick.AddListener(() => onClick());
+
+        return btn;
+    }
+
     private void EnsurePanelPlacement()
     {
         if (!forceRuntimePanelPlacement || panelRoot == null)
