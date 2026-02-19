@@ -8,12 +8,22 @@ using UnityEngine;
 public sealed class CardAuthoringWindow : EditorWindow
 {
     private const string AssetSaveFolder = "Assets/_Project/Resources/CardAuthoring";
+    private static readonly string[] RarityLabels = { "0 Common", "1 Rare", "2 Epic", "3 Legendary", "4 Dream" };
+    private static readonly string[] RaritySpritePaths =
+    {
+        "Assets/_Project/04_Art/UI/card_common.png",
+        "Assets/_Project/04_Art/UI/card_rare.png",
+        "Assets/_Project/04_Art/UI/card_epic.png",
+        "Assets/_Project/04_Art/UI/card_regendary.png",
+        "Assets/_Project/04_Art/UI/card_dream.png",
+    };
 
     private string _cardId = "card.new";
     private string _cardName = "새 카드";
     private Sprite _cardImage;
     private int _rarity;
     private int _suitTheme;
+    private bool _autoImageByRarity = true;
     private bool _useAutoName = false;
     private bool _useAutoDescription = true;
     private string _manualName = string.Empty;
@@ -65,8 +75,16 @@ public sealed class CardAuthoringWindow : EditorWindow
     {
         EditorGUILayout.Space(4f);
         EditorGUILayout.LabelField("Visual", EditorStyles.boldLabel);
+        int nextRarity = EditorGUILayout.IntPopup("Rarity", Mathf.Clamp(_rarity, 0, 4), RarityLabels, new[] { 0, 1, 2, 3, 4 });
+        _autoImageByRarity = EditorGUILayout.ToggleLeft("Auto Apply Rarity Frame Sprite", _autoImageByRarity);
+        if (nextRarity != _rarity)
+        {
+            _rarity = nextRarity;
+            if (_autoImageByRarity)
+                _cardImage = LoadRaritySprite(_rarity) ?? _cardImage;
+        }
+
         _cardImage = (Sprite)EditorGUILayout.ObjectField("Card Image", _cardImage, typeof(Sprite), false);
-        _rarity = EditorGUILayout.IntSlider("Rarity", Mathf.Clamp(_rarity, 0, 3), 0, 3);
         _suitTheme = EditorGUILayout.IntSlider("Suit Theme", Mathf.Clamp(_suitTheme, 0, 4), 0, 4);
     }
 
@@ -200,8 +218,8 @@ public sealed class CardAuthoringWindow : EditorWindow
         var asset = CreateInstance<CardAuthoringAsset>();
         asset.cardId = _cardId;
         asset.cardName = _cardName;
-        asset.cardImage = _cardImage;
-        asset.rarity = Mathf.Clamp(_rarity, 0, 3);
+        asset.cardImage = _cardImage != null ? _cardImage : (_autoImageByRarity ? LoadRaritySprite(_rarity) : null);
+        asset.rarity = Mathf.Clamp(_rarity, 0, 4);
         asset.suitTheme = Mathf.Clamp(_suitTheme, 0, 4);
         asset.useAutoName = _useAutoName;
         asset.useAutoDescription = _useAutoDescription;
@@ -293,6 +311,14 @@ public sealed class CardAuthoringWindow : EditorWindow
         }
 
         return new string(chars);
+    }
+
+    private static Sprite LoadRaritySprite(int rarity)
+    {
+        int idx = Mathf.Clamp(rarity, 0, 4);
+        if (idx < 0 || idx >= RaritySpritePaths.Length)
+            return null;
+        return AssetDatabase.LoadAssetAtPath<Sprite>(RaritySpritePaths[idx]);
     }
 
     private void SwapEffects(int a, int b)

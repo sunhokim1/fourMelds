@@ -10,6 +10,7 @@ using FourMelds.Core.Turn;
 using Project.Core.Turn;
 using Project.Core.Melds;
 using Project.Core.Tiles;
+using UnityEngine.EventSystems;
 
 namespace FourMelds.Combat
 {
@@ -23,10 +24,19 @@ namespace FourMelds.Combat
         [SerializeField] private GameObject _buildBoardRoot;
         [SerializeField] private Button _buildDoneButton;
         [SerializeField] private Text _turnStatusText;
+        [Header("Exchange UI")]
+        [SerializeField] private GameObject _exchangePanelRoot;
+        [SerializeField] private Text _exchangeTitleText;
+        [SerializeField] private Text _exchangeStatusText;
+        [SerializeField] private Transform _exchangeSelectedTilesRoot;
+        [SerializeField] private Image _exchangeSelectedTilesFrame;
+        [SerializeField] private Button _exchangeConfirmButton;
+        [SerializeField] private Button _exchangeCancelButton;
         [SerializeField] private int _playerHp = 50;
         [SerializeField] private int _enemyHp = 60;
         [SerializeField] private int _cardsPerTurn = 5;
         [SerializeField] private int[] _startingDeckCardIndices = Array.Empty<int>();
+        [SerializeField] private int _rewardEveryTurns = 3;
         [SerializeField] private bool _animatePhaseSwap = true;
         [SerializeField] private float _phaseSwapDuration = 0.22f;
         [SerializeField] private float _cardPanelHiddenYOffset = -280f;
@@ -62,6 +72,17 @@ namespace FourMelds.Combat
         private bool _phaseSwapInitialized;
         private int _lastScreenWidth;
         private int _lastScreenHeight;
+        private bool _isExchangePending;
+        private int _pendingExchangeCardHandIndex = -1;
+        private int _pendingExchangeCardIndex = -1;
+        private int _pendingExchangeMaxCount;
+        private CardDefinition _pendingExchangeDefinition;
+        private readonly System.Collections.Generic.List<int> _pendingExchangeTiles = new System.Collections.Generic.List<int>();
+        private readonly System.Collections.Generic.List<TileView> _pendingExchangeTileViews = new System.Collections.Generic.List<TileView>();
+        private readonly System.Collections.Generic.List<GameObject> _exchangePreviewTiles = new System.Collections.Generic.List<GameObject>();
+        private readonly System.Collections.Generic.List<CanvasGroup> _exchangeDimCanvasGroups = new System.Collections.Generic.List<CanvasGroup>();
+        private readonly System.Collections.Generic.List<int> _rewardPoolCardIndices = new System.Collections.Generic.List<int>();
+        private bool _rewardPoolBuilt;
 
         private void Awake()
         {
@@ -105,6 +126,11 @@ namespace FourMelds.Combat
             InitializeDeck();
             if (_cardPanel != null)
                 _cardPanel.OnHandCardClicked += OnHandCardClicked;
+            TileView.OnTileClicked += HandleTileViewClicked;
+            if (_exchangeConfirmButton != null)
+                _exchangeConfirmButton.onClick.AddListener(OnExchangeConfirmClicked);
+            if (_exchangeCancelButton != null)
+                _exchangeCancelButton.onClick.AddListener(OnExchangeCancelClicked);
 
             StartCoroutine(BeginTurnLoopAfterUiLayout());
         }
@@ -113,6 +139,13 @@ namespace FourMelds.Combat
         {
             if (_cardPanel != null)
                 _cardPanel.OnHandCardClicked -= OnHandCardClicked;
+            TileView.OnTileClicked -= HandleTileViewClicked;
+            SetExchangeFocusUI(enabled: false);
+            ClearExchangePreviewTiles();
+            if (_exchangeConfirmButton != null)
+                _exchangeConfirmButton.onClick.RemoveListener(OnExchangeConfirmClicked);
+            if (_exchangeCancelButton != null)
+                _exchangeCancelButton.onClick.RemoveListener(OnExchangeCancelClicked);
 
             if (_phaseSwapRoutine != null)
             {
@@ -153,6 +186,8 @@ namespace FourMelds.Combat
 
             if (_turnState.Phase == TurnPhase.CardUse)
             {
+                if (_isExchangePending)
+                    CancelPendingExchange("phase advance");
                 EnterBuildFromCardUse();
                 return;
             }
@@ -271,7 +306,9 @@ namespace FourMelds.Combat
             }
 
             _turnState.SetPhase(TurnPhase.CardUse);
+            TryGrantPeriodicReward();
             _cardDeck?.StartTurnDraw(_cardsPerTurn);
+            CancelPendingExchange("turn start");
             SetBuildDoneInteractable(true);
             UpdateAdvanceButtonLabel();
             UpdatePhaseBoardState();
@@ -288,6 +325,7 @@ namespace FourMelds.Combat
         private void EnterBuildFromCardUse()
         {
             _cardDeck?.DiscardHand();
+            CancelPendingExchange("leave card use");
             _turnState.SetPhase(TurnPhase.Build);
             SetBuildDoneInteractable(true);
             UpdateAdvanceButtonLabel();
@@ -397,7 +435,7 @@ namespace FourMelds.Combat
                 return;
 
             bool isCardUse = _turnState.Phase == TurnPhase.CardUse;
-            _cardPanel.SetInteractable(isCardUse);
+            _cardPanel.SetInteractable(isCardUse && !_isExchangePending);
             _cardPanel.RenderHand(_cardDeck?.HandCards ?? Array.Empty<int>());
         }
 
@@ -612,11 +650,115 @@ namespace FourMelds.Combat
                 return;
             }
 
-            var starter = new int[CardRegistry.DefaultCards.Count];
-            for (int i = 0; i < starter.Length; i++)
-                starter[i] = i;
+            const string starterDrawId = "draw.random5";
+            const string starterExchangeId = "exchange.2";
+            const int starterDrawCopies = 9;
+            const int starterExchangeCopies = 1;
 
-            _cardDeck.SetDeck(starter);
+            if (TryFindCardIndexById(starterDrawId, out int drawIndex) &&
+                TryFindCardIndexById(starterExchangeId, out int exchangeIndex))
+            {
+                int total = starterDrawCopies + starterExchangeCopies;
+                var starter = new int[total];
+                int cursor = 0;
+                for (int i = 0; i < starterDrawCopies; i++)
+                    starter[cursor++] = drawIndex;
+                for (int i = 0; i < starterExchangeCopies; i++)
+                    starter[cursor++] = exchangeIndex;
+
+                _cardDeck.SetDeck(starter);
+                Debug.Log($"[CARD] Starter deck initialized: {starterDrawId}x{starterDrawCopies}, {starterExchangeId}x{starterExchangeCopies}");
+                return;
+            }
+
+            // Fallback if card id mapping is broken.
+            var fallback = new int[CardRegistry.DefaultCards.Count];
+            for (int i = 0; i < fallback.Length; i++)
+                fallback[i] = i;
+
+            _cardDeck.SetDeck(fallback);
+            Debug.LogWarning("[CARD] Starter deck id mapping failed. Fallback to full registered card set.");
+        }
+
+        private void TryGrantPeriodicReward()
+        {
+            if (_turnState == null || _cardDeck == null)
+                return;
+            if (_rewardEveryTurns <= 0)
+                return;
+            if (_turnState.TurnIndex <= 0 || _turnState.TurnIndex % _rewardEveryTurns != 0)
+                return;
+
+            if (!_rewardPoolBuilt)
+                BuildRewardPool();
+            if (_rewardPoolCardIndices.Count == 0)
+                return;
+
+            int pick = UnityEngine.Random.Range(0, _rewardPoolCardIndices.Count);
+            int rewardCardIndex = _rewardPoolCardIndices[pick];
+            if (!_cardDeck.TryAddCardToDiscard(rewardCardIndex))
+                return;
+
+            string rewardName = $"Card {rewardCardIndex}";
+            if (CardRegistry.TryGetDefinition(rewardCardIndex, out var def) && def != null && !string.IsNullOrWhiteSpace(def.name))
+                rewardName = def.name;
+
+            Debug.Log($"[REWARD] Turn {_turnState.TurnIndex}: gained '{rewardName}' (added to discard).");
+        }
+
+        private void BuildRewardPool()
+        {
+            _rewardPoolCardIndices.Clear();
+            _rewardPoolBuilt = true;
+
+            // Starter set is fixed to draw.random5 x9 + exchange.2 x1.
+            const string starterDrawId = "draw.random5";
+            const string starterExchangeId = "exchange.2";
+
+            var defs = CardRegistry.Definitions;
+            for (int i = 0; i < defs.Count; i++)
+            {
+                var def = defs[i];
+                if (def == null || string.IsNullOrWhiteSpace(def.id))
+                    continue;
+
+                if (string.Equals(def.id, starterDrawId, StringComparison.Ordinal) ||
+                    string.Equals(def.id, starterExchangeId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _rewardPoolCardIndices.Add(i);
+            }
+
+            // If no extra card exists yet, allow all cards for convenience.
+            if (_rewardPoolCardIndices.Count == 0)
+            {
+                for (int i = 0; i < defs.Count; i++)
+                    _rewardPoolCardIndices.Add(i);
+            }
+        }
+
+        private static bool TryFindCardIndexById(string cardId, out int cardIndex)
+        {
+            cardIndex = -1;
+            if (string.IsNullOrWhiteSpace(cardId))
+                return false;
+
+            var defs = CardRegistry.Definitions;
+            for (int i = 0; i < defs.Count; i++)
+            {
+                var def = defs[i];
+                if (def == null || string.IsNullOrWhiteSpace(def.id))
+                    continue;
+                if (!string.Equals(def.id, cardId, StringComparison.Ordinal))
+                    continue;
+
+                cardIndex = i;
+                return true;
+            }
+
+            return false;
         }
 
         private void OnHandCardClicked(int handIndex)
@@ -624,8 +766,17 @@ namespace FourMelds.Combat
             if (_turnState == null || _turnState.Phase != TurnPhase.CardUse)
                 return;
 
+            if (_isExchangePending)
+                return;
+
             if (_cardDeck == null || !_cardDeck.TryGetHandCard(handIndex, out var cardIndex))
                 return;
+
+            if (TryGetExchangeDefinition(cardIndex, out var exchangeDef, out var exchangeCount))
+            {
+                BeginExchangeSelection(handIndex, cardIndex, exchangeDef, exchangeCount);
+                return;
+            }
 
             if (!CardPlayService.TryPlay(cardIndex, _turnState, out var reason))
             {
@@ -641,6 +792,482 @@ namespace FourMelds.Combat
 
             UpdateCardPanelState();
             RefreshTurnStatus();
+        }
+
+        private bool TryGetExchangeDefinition(int cardIndex, out CardDefinition definition, out int maxCount)
+        {
+            definition = null;
+            maxCount = 0;
+
+            if (!CardRegistry.TryGetDefinition(cardIndex, out definition) || definition == null)
+                return false;
+
+            if (!string.Equals(definition.action, "exchange", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            maxCount = Mathf.Max(1, definition.count);
+            return true;
+        }
+
+        private void BeginExchangeSelection(int handIndex, int cardIndex, CardDefinition definition, int maxCount)
+        {
+            _isExchangePending = true;
+            _pendingExchangeCardHandIndex = handIndex;
+            _pendingExchangeCardIndex = cardIndex;
+            _pendingExchangeDefinition = definition;
+            _pendingExchangeMaxCount = maxCount;
+            _pendingExchangeTiles.Clear();
+            _pendingExchangeTileViews.Clear();
+            ClearExchangePreviewTiles();
+
+            EnsureExchangePanel();
+            SetExchangeFocusUI(enabled: true);
+            UpdateExchangePanel();
+            UpdateCardPanelState();
+            Debug.Log($"[CARD] Exchange select start card={cardIndex} max={maxCount}");
+        }
+
+        private void HandleTileViewClicked(TileView tileView, PointerEventData.InputButton button)
+        {
+            if (!_isExchangePending || _turnState == null || _turnState.Phase != TurnPhase.CardUse)
+                return;
+
+            if (button != PointerEventData.InputButton.Left || tileView == null)
+                return;
+
+            if (_handTilesView != null && !tileView.transform.IsChildOf(_handTilesView.transform))
+                return;
+
+            ToggleExchangeTile(tileView);
+        }
+
+        private void ToggleExchangeTile(TileView tileView)
+        {
+            if (_turnState == null)
+                return;
+
+            int tileId = tileView.Id;
+            int selectedTileViewIndex = _pendingExchangeTileViews.LastIndexOf(tileView);
+            if (selectedTileViewIndex >= 0)
+            {
+                _pendingExchangeTileViews.RemoveAt(selectedTileViewIndex);
+                _pendingExchangeTiles.RemoveAt(selectedTileViewIndex);
+                UpdateExchangePanel();
+                return;
+            }
+
+            if (_pendingExchangeTiles.Count >= _pendingExchangeMaxCount)
+            {
+                Debug.LogWarning($"[CARD] Exchange selection full ({_pendingExchangeMaxCount}).");
+                return;
+            }
+
+            int selectedCopies = CountSelectedTile(tileId);
+            int handCopies = _turnState.CountOf(tileId);
+            if (selectedCopies >= handCopies)
+            {
+                Debug.LogWarning($"[CARD] Cannot select more tileId={tileId}.");
+                return;
+            }
+
+            _pendingExchangeTileViews.Add(tileView);
+            _pendingExchangeTiles.Add(tileId);
+            UpdateExchangePanel();
+        }
+
+        private int CountSelectedTile(int tileId)
+        {
+            int count = 0;
+            for (int i = 0; i < _pendingExchangeTiles.Count; i++)
+                if (_pendingExchangeTiles[i] == tileId)
+                    count++;
+            return count;
+        }
+
+        private void OnExchangeConfirmClicked()
+        {
+            if (!_isExchangePending || _turnState == null || _cardDeck == null)
+                return;
+
+            if (_pendingExchangeTiles.Count <= 0)
+            {
+                Debug.LogWarning("[CARD] Exchange confirm ignored: no selected tiles.");
+                return;
+            }
+
+            if (!CardPlayService.TryApplyExchange(_turnState, _pendingExchangeTiles, _pendingExchangeDefinition, out var reason))
+            {
+                Debug.LogWarning($"[CARD] Exchange failed: {reason}");
+                return;
+            }
+
+            if (!_cardDeck.TryPlayHandCard(_pendingExchangeCardHandIndex, out _))
+            {
+                Debug.LogWarning("[CARD] Exchange card consume failed.");
+                return;
+            }
+
+            Debug.Log($"[CARD] Exchange applied card={_pendingExchangeCardIndex} count={_pendingExchangeTiles.Count}");
+            _pendingExchangeTileViews.Clear();
+            _pendingExchangeTiles.Clear();
+            _isExchangePending = false;
+            _pendingExchangeCardHandIndex = -1;
+            _pendingExchangeCardIndex = -1;
+            _pendingExchangeMaxCount = 0;
+            _pendingExchangeDefinition = null;
+            ClearExchangePreviewTiles();
+            SetExchangeFocusUI(enabled: false);
+
+            if (_actionMenu != null)
+                _actionMenu.RefreshUIFromState(hideActionMenu: true, clearPendingQuickMeld: true);
+
+            UpdateExchangePanel();
+            UpdateCardPanelState();
+            RefreshTurnStatus();
+        }
+
+        private void OnExchangeCancelClicked()
+        {
+            CancelPendingExchange("cancel button");
+        }
+
+        private void CancelPendingExchange(string reason)
+        {
+            if (!_isExchangePending)
+                return;
+
+            _pendingExchangeTileViews.Clear();
+            _pendingExchangeTiles.Clear();
+            _isExchangePending = false;
+            _pendingExchangeCardHandIndex = -1;
+            _pendingExchangeCardIndex = -1;
+            _pendingExchangeMaxCount = 0;
+            _pendingExchangeDefinition = null;
+            ClearExchangePreviewTiles();
+            SetExchangeFocusUI(enabled: false);
+
+            Debug.Log($"[CARD] Exchange cancelled ({reason})");
+            UpdateExchangePanel();
+            UpdateCardPanelState();
+        }
+
+        private void UpdateExchangePanel()
+        {
+            bool visible = _isExchangePending && _turnState != null && _turnState.Phase == TurnPhase.CardUse;
+            if (!visible && _exchangePanelRoot == null)
+                return;
+
+            EnsureExchangePanel();
+            if (_exchangePanelRoot != null)
+                _exchangePanelRoot.SetActive(visible);
+            if (!visible)
+            {
+                ClearExchangePreviewTiles();
+                return;
+            }
+
+            if (_exchangeTitleText != null)
+                _exchangeTitleText.text = $"교환 패 선택 (최대 {_pendingExchangeMaxCount}장)";
+
+            if (_exchangeStatusText != null)
+            {
+                _exchangeStatusText.text = $"선택 {_pendingExchangeTiles.Count}/{_pendingExchangeMaxCount} · 클릭으로 선택/해제";
+            }
+
+            if (_exchangeConfirmButton != null)
+                _exchangeConfirmButton.interactable = _pendingExchangeTiles.Count > 0;
+
+            RebuildExchangeTilePreviews();
+        }
+
+        private void EnsureExchangePanel()
+        {
+            if (_exchangePanelRoot != null &&
+                _exchangeTitleText != null &&
+                _exchangeStatusText != null &&
+                _exchangeSelectedTilesRoot != null &&
+                _exchangeConfirmButton != null &&
+                _exchangeCancelButton != null)
+                return;
+
+            var parent = FindRootCanvasRect();
+            if (parent == null)
+                return;
+
+            if (_exchangePanelRoot == null)
+            {
+                var rootGo = new GameObject("ExchangeOverlay", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+                rootGo.transform.SetParent(parent, false);
+                _exchangePanelRoot = rootGo;
+
+                var rootRt = rootGo.GetComponent<RectTransform>();
+                rootRt.anchorMin = new Vector2(0.5f, 0.5f);
+                rootRt.anchorMax = new Vector2(0.5f, 0.5f);
+                rootRt.pivot = new Vector2(0.5f, 0.5f);
+                rootRt.sizeDelta = new Vector2(760f, 280f);
+                rootRt.anchoredPosition = Vector2.zero;
+
+                var bg = rootGo.GetComponent<Image>();
+                bg.color = new Color(0.06f, 0.08f, 0.11f, 0.96f);
+                bg.raycastTarget = true;
+
+                var vlg = rootGo.GetComponent<VerticalLayoutGroup>();
+                vlg.padding = new RectOffset(18, 18, 16, 16);
+                vlg.spacing = 10f;
+                vlg.childAlignment = TextAnchor.UpperLeft;
+                vlg.childControlHeight = true;
+                vlg.childControlWidth = true;
+                vlg.childForceExpandHeight = false;
+                vlg.childForceExpandWidth = true;
+
+                rootGo.transform.SetAsLastSibling();
+            }
+
+            var root = _exchangePanelRoot.transform;
+            var builtinFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (_exchangeTitleText == null)
+            {
+                var titleGo = new GameObject("TitleText", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+                titleGo.transform.SetParent(root, false);
+                _exchangeTitleText = titleGo.GetComponent<Text>();
+                _exchangeTitleText.font = builtinFont;
+                _exchangeTitleText.fontSize = 24;
+                _exchangeTitleText.fontStyle = FontStyle.Bold;
+                _exchangeTitleText.alignment = TextAnchor.UpperLeft;
+                _exchangeTitleText.color = Color.white;
+                var le = titleGo.GetComponent<LayoutElement>();
+                le.preferredHeight = 36f;
+            }
+
+            if (_exchangeStatusText == null)
+            {
+                var textGo = new GameObject("StatusText", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+                textGo.transform.SetParent(root, false);
+                _exchangeStatusText = textGo.GetComponent<Text>();
+                _exchangeStatusText.font = builtinFont;
+                _exchangeStatusText.fontSize = 18;
+                _exchangeStatusText.alignment = TextAnchor.UpperLeft;
+                _exchangeStatusText.color = new Color(0.86f, 0.92f, 0.98f, 0.95f);
+                _exchangeStatusText.horizontalOverflow = HorizontalWrapMode.Wrap;
+                _exchangeStatusText.verticalOverflow = VerticalWrapMode.Overflow;
+                var le = textGo.GetComponent<LayoutElement>();
+                le.preferredHeight = 30f;
+            }
+
+            if (_exchangeSelectedTilesFrame == null || _exchangeSelectedTilesRoot == null)
+            {
+                var frameGo = new GameObject("SelectedTilesFrame", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+                frameGo.transform.SetParent(root, false);
+                _exchangeSelectedTilesFrame = frameGo.GetComponent<Image>();
+                _exchangeSelectedTilesFrame.color = new Color(1f, 1f, 1f, 0.08f);
+                var frameLe = frameGo.GetComponent<LayoutElement>();
+                frameLe.preferredHeight = 126f;
+                frameLe.minHeight = 126f;
+
+                var frameRt = frameGo.GetComponent<RectTransform>();
+                frameRt.anchorMin = new Vector2(0f, 0f);
+                frameRt.anchorMax = new Vector2(1f, 1f);
+                frameRt.pivot = new Vector2(0.5f, 0.5f);
+
+                var contentGo = new GameObject("SelectedTilesContent", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
+                contentGo.transform.SetParent(frameGo.transform, false);
+                _exchangeSelectedTilesRoot = contentGo.transform;
+
+                var contentRt = contentGo.GetComponent<RectTransform>();
+                contentRt.anchorMin = new Vector2(0f, 0.5f);
+                contentRt.anchorMax = new Vector2(0f, 0.5f);
+                contentRt.pivot = new Vector2(0f, 0.5f);
+                contentRt.anchoredPosition = new Vector2(12f, 0f);
+
+                var hlg = contentGo.GetComponent<HorizontalLayoutGroup>();
+                hlg.spacing = 12f;
+                hlg.childAlignment = TextAnchor.MiddleLeft;
+                hlg.childControlWidth = false;
+                hlg.childControlHeight = false;
+                hlg.childForceExpandWidth = false;
+                hlg.childForceExpandHeight = false;
+
+                var fitter = contentGo.GetComponent<ContentSizeFitter>();
+                fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+            }
+
+            Transform buttonRow = root.Find("ButtonRow");
+            if (buttonRow == null)
+            {
+                var rowGo = new GameObject("ButtonRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+                rowGo.transform.SetParent(root, false);
+                var hlg = rowGo.GetComponent<HorizontalLayoutGroup>();
+                hlg.spacing = 8f;
+                hlg.childAlignment = TextAnchor.MiddleRight;
+                hlg.childControlHeight = true;
+                hlg.childControlWidth = false;
+                hlg.childForceExpandHeight = false;
+                hlg.childForceExpandWidth = false;
+                buttonRow = rowGo.transform;
+            }
+
+            if (_exchangeConfirmButton == null)
+                _exchangeConfirmButton = CreateRuntimeButton(buttonRow, "교환");
+            if (_exchangeCancelButton == null)
+                _exchangeCancelButton = CreateRuntimeButton(buttonRow, "취소");
+
+            if (_exchangeConfirmButton != null)
+            {
+                _exchangeConfirmButton.onClick.RemoveListener(OnExchangeConfirmClicked);
+                _exchangeConfirmButton.onClick.AddListener(OnExchangeConfirmClicked);
+            }
+
+            if (_exchangeCancelButton != null)
+            {
+                _exchangeCancelButton.onClick.RemoveListener(OnExchangeCancelClicked);
+                _exchangeCancelButton.onClick.AddListener(OnExchangeCancelClicked);
+            }
+        }
+
+        private RectTransform FindRootCanvasRect()
+        {
+            Canvas canvas = null;
+            if (_cardPanel != null)
+                canvas = _cardPanel.GetComponentInParent<Canvas>();
+            if (canvas == null && _handTilesView != null)
+                canvas = _handTilesView.GetComponentInParent<Canvas>();
+            if (canvas == null)
+                canvas = FindFirstObjectByType<Canvas>();
+            return canvas != null ? canvas.transform as RectTransform : null;
+        }
+
+        private void SetExchangeFocusUI(bool enabled)
+        {
+            EnsureExchangeDimTargets();
+            float alpha = enabled ? 0.32f : 1f;
+            for (int i = 0; i < _exchangeDimCanvasGroups.Count; i++)
+            {
+                var cg = _exchangeDimCanvasGroups[i];
+                if (cg == null)
+                    continue;
+                cg.alpha = alpha;
+                cg.interactable = !enabled;
+                cg.blocksRaycasts = !enabled;
+            }
+        }
+
+        private void EnsureExchangeDimTargets()
+        {
+            if (_exchangeDimCanvasGroups.Count > 0)
+                return;
+
+            TryAddDimTarget(_cardPanel != null ? _cardPanel.gameObject : null);
+            TryAddDimTarget(_buildDoneButton != null ? _buildDoneButton.gameObject : null);
+            TryAddDimTarget(_turnStatusText != null ? _turnStatusText.gameObject : null);
+            TryAddDimTarget(_buildBoardRoot);
+        }
+
+        private void TryAddDimTarget(GameObject go)
+        {
+            if (go == null)
+                return;
+            if (_handTilesView != null && go == _handTilesView.gameObject)
+                return;
+            if (_exchangePanelRoot != null && go == _exchangePanelRoot)
+                return;
+
+            var cg = go.GetComponent<CanvasGroup>();
+            if (cg == null)
+                cg = go.AddComponent<CanvasGroup>();
+            if (!_exchangeDimCanvasGroups.Contains(cg))
+                _exchangeDimCanvasGroups.Add(cg);
+        }
+
+        private void RebuildExchangeTilePreviews()
+        {
+            ClearExchangePreviewTiles();
+            if (_exchangeSelectedTilesRoot == null)
+                return;
+
+            for (int i = 0; i < _pendingExchangeTileViews.Count; i++)
+            {
+                var source = _pendingExchangeTileViews[i];
+                if (source == null)
+                    continue;
+                var preview = CreateExchangePreviewTile(source);
+                if (preview != null)
+                    _exchangePreviewTiles.Add(preview);
+            }
+        }
+
+        private GameObject CreateExchangePreviewTile(TileView source)
+        {
+            if (source == null || _exchangeSelectedTilesRoot == null)
+                return null;
+
+            var clone = Instantiate(source.gameObject, _exchangeSelectedTilesRoot);
+            clone.name = $"ExchangeTile_{source.Id}";
+
+            var tileView = clone.GetComponent<TileView>();
+            if (tileView != null)
+                Destroy(tileView);
+
+            var rt = clone.transform as RectTransform;
+            if (rt != null)
+            {
+                rt.localScale = Vector3.one;
+                rt.sizeDelta = new Vector2(56f, 84f);
+            }
+
+            var graphics = clone.GetComponentsInChildren<Graphic>(true);
+            for (int i = 0; i < graphics.Length; i++)
+            {
+                if (graphics[i] != null)
+                    graphics[i].raycastTarget = false;
+            }
+
+            var button = clone.GetComponent<Button>();
+            if (button != null)
+                button.interactable = false;
+
+            return clone;
+        }
+
+        private void ClearExchangePreviewTiles()
+        {
+            for (int i = 0; i < _exchangePreviewTiles.Count; i++)
+            {
+                var go = _exchangePreviewTiles[i];
+                if (go != null)
+                    Destroy(go);
+            }
+            _exchangePreviewTiles.Clear();
+        }
+
+        private static Button CreateRuntimeButton(Transform parent, string label)
+        {
+            var go = new GameObject(label + "Button", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
+            go.transform.SetParent(parent, false);
+            var image = go.GetComponent<Image>();
+            image.color = new Color(0.24f, 0.34f, 0.48f, 0.96f);
+            var button = go.GetComponent<Button>();
+            var le = go.GetComponent<LayoutElement>();
+            le.minWidth = 110f;
+            le.preferredWidth = 110f;
+            le.minHeight = 34f;
+            le.preferredHeight = 34f;
+
+            var textGo = new GameObject("Label", typeof(RectTransform), typeof(Text));
+            textGo.transform.SetParent(go.transform, false);
+            var textRt = textGo.GetComponent<RectTransform>();
+            textRt.anchorMin = Vector2.zero;
+            textRt.anchorMax = Vector2.one;
+            textRt.offsetMin = Vector2.zero;
+            textRt.offsetMax = Vector2.zero;
+            var text = textGo.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 17;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.white;
+            text.text = label;
+            text.raycastTarget = false;
+            return button;
         }
 
         public void Dev_Setup_ToitoiSanankou()

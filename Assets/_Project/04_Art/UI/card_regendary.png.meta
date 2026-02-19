@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: c005bfeb6ee0cbd419b66f7a4d4cf5a2
+guid: f3710c3b6634f3747ae8657b4c92b714
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -6755275287414111207
-    second: gem_common_0
+      213: -1470791335717647485
+    second: card_regendary_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: gem_common_0
+      name: card_regendary_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 86
-        height: 86
+        width: 1024
+        height: 1536
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 91405b5cae07042a0800000000000000
-      internalID: -6755275287414111207
+      spriteID: 38bc3df9213b69be0800000000000000
+      internalID: -1470791335717647485
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      gem_common_0: -6755275287414111207
+      card_regendary_0: -1470791335717647485
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -2,7 +2,7 @@
   "cards": [
     {
       "id": "draw.random5",
-      "rarity": 2,
+      "rarity": 0,
       "suitTheme": 0,
       "action": "draw",
       "suit": "random",
@@ -11,7 +11,7 @@
     },
     {
       "id": "draw.manzu3",
-      "rarity": 1,
+      "rarity": 0,
       "suitTheme": 1,
       "action": "draw",
       "suit": "manzu",
@@ -19,7 +19,7 @@
     },
     {
       "id": "draw.honor1",
-      "rarity": 1,
+      "rarity": 0,
       "suitTheme": 4,
       "action": "draw",
       "suit": "honor",
@@ -27,7 +27,7 @@
     },
     {
       "id": "exchange.2",
-      "rarity": 2,
+      "rarity": 0,
       "suitTheme": 0,
       "action": "exchange",
       "suit": "random",
@@ -35,7 +35,7 @@
     },
     {
       "id": "draw.tanyao4",
-      "rarity": 1,
+      "rarity": 0,
       "suitTheme": 0,
       "action": "draw",
       "suit": "number",

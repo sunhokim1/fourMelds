@@ -4,10 +4,16 @@ using FourMelds.Cards;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public sealed class CardPanelController : MonoBehaviour
 {
     private const float MinLargeDragPlayRadius = 660f;
+#if UNITY_EDITOR
+    private const string UiArtDir = "Assets/_Project/04_Art/UI";
+#endif
 
     [Header("UI")]
     [SerializeField] private GameObject panelRoot;
@@ -49,6 +55,13 @@ public sealed class CardPanelController : MonoBehaviour
     [SerializeField] private Sprite rarityGemRareSprite;
     [SerializeField] private Sprite rarityGemEpicSprite;
     [SerializeField] private Sprite rarityGemLegendarySprite;
+    [SerializeField] private Sprite rarityGemDreamSprite;
+    [Header("Rarity Frame Overrides (Optional)")]
+    [SerializeField] private Sprite rarityFrameCommonSprite;
+    [SerializeField] private Sprite rarityFrameRareSprite;
+    [SerializeField] private Sprite rarityFrameEpicSprite;
+    [SerializeField] private Sprite rarityFrameLegendarySprite;
+    [SerializeField] private Sprite rarityFrameDreamSprite;
 
     [Header("Panel Placement")]
     [SerializeField] private bool forceRuntimePanelPlacement = false;
@@ -102,7 +115,39 @@ public sealed class CardPanelController : MonoBehaviour
     {
         if (requireDragToPlay && dragPlayRadius < MinLargeDragPlayRadius)
             dragPlayRadius = MinLargeDragPlayRadius;
+
+#if UNITY_EDITOR
+        AutoAssignRarityFrameSpritesInEditor();
+#endif
     }
+
+#if UNITY_EDITOR
+    private void AutoAssignRarityFrameSpritesInEditor()
+    {
+        bool changed = false;
+        changed |= TryAssignIfNull(ref rarityFrameCommonSprite, $"{UiArtDir}/card_common.png");
+        changed |= TryAssignIfNull(ref rarityFrameRareSprite, $"{UiArtDir}/card_rare.png");
+        changed |= TryAssignIfNull(ref rarityFrameEpicSprite, $"{UiArtDir}/card_epic.png");
+        changed |= TryAssignIfNull(ref rarityFrameLegendarySprite, $"{UiArtDir}/card_regendary.png");
+        changed |= TryAssignIfNull(ref rarityFrameDreamSprite, $"{UiArtDir}/card_dream.png");
+
+        if (changed)
+            EditorUtility.SetDirty(this);
+    }
+
+    private static bool TryAssignIfNull(ref Sprite target, string assetPath)
+    {
+        if (target != null)
+            return false;
+
+        var loaded = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+        if (loaded == null)
+            return false;
+
+        target = loaded;
+        return true;
+    }
+#endif
 
     private void EnforceRuntimeDragDefaults()
     {
@@ -539,7 +584,7 @@ public sealed class CardPanelController : MonoBehaviour
                 name = def.name;
             if (!string.IsNullOrWhiteSpace(def.description))
                 description = def.description;
-            rarityTier = Mathf.Clamp(def.rarity, 0, 3);
+            rarityTier = Mathf.Clamp(def.rarity, 0, 4);
             description = StylizeDescription(description);
             return;
         }
@@ -999,7 +1044,14 @@ public sealed class CardPanelController : MonoBehaviour
             gemCommon: rarityGemCommonSprite,
             gemRare: rarityGemRareSprite,
             gemEpic: rarityGemEpicSprite,
-            gemLegendary: rarityGemLegendarySprite);
+            gemLegendary: rarityGemLegendarySprite,
+            gemDream: rarityGemDreamSprite);
+        view.SetRarityFrameSprites(
+            common: rarityFrameCommonSprite,
+            rare: rarityFrameRareSprite,
+            epic: rarityFrameEpicSprite,
+            legendary: rarityFrameLegendarySprite,
+            dream: rarityFrameDreamSprite);
         view.SetColors(
             normalColor: cardNormalColor,
             hoverColor: cardHoverColor,

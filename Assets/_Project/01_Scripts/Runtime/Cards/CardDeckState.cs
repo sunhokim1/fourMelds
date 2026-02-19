@@ -75,6 +75,15 @@ namespace FourMelds.Cards
             return true;
         }
 
+        public bool TryAddCardToDiscard(int cardIndex)
+        {
+            if (cardIndex < 0)
+                return false;
+
+            _discardPile.Add(cardIndex);
+            return true;
+        }
+
         private void DrawToHand(int count)
         {
             if (count <= 0)

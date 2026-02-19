@@ -151,11 +151,11 @@ namespace FourMelds.Cards
         {
             var defs = new List<CardDefinition>
             {
-                new CardDefinition { id = "draw.random5", rarity = 2, suitTheme = 0, action = "draw", suit = "random", count = 5, preferHonorFirst = true },
-                new CardDefinition { id = "draw.manzu3", rarity = 1, suitTheme = 1, action = "draw", suit = "manzu", count = 3 },
-                new CardDefinition { id = "draw.honor1", rarity = 1, suitTheme = 4, action = "draw", suit = "honor", count = 1 },
-                new CardDefinition { id = "exchange.2", rarity = 2, suitTheme = 0, action = "exchange", suit = "random", count = 2 },
-                new CardDefinition { id = "draw.tanyao4", rarity = 1, suitTheme = 0, action = "draw", suit = "number", count = 4, minRank = 2, maxRank = 8 },
+                new CardDefinition { id = "draw.random5", rarity = 0, suitTheme = 0, action = "draw", suit = "random", count = 5, preferHonorFirst = true },
+                new CardDefinition { id = "draw.manzu3", rarity = 0, suitTheme = 1, action = "draw", suit = "manzu", count = 3 },
+                new CardDefinition { id = "draw.honor1", rarity = 0, suitTheme = 4, action = "draw", suit = "honor", count = 1 },
+                new CardDefinition { id = "exchange.2", rarity = 0, suitTheme = 0, action = "exchange", suit = "random", count = 2 },
+                new CardDefinition { id = "draw.tanyao4", rarity = 0, suitTheme = 0, action = "draw", suit = "number", count = 4, minRank = 2, maxRank = 8 },
             };
 
             for (int i = 0; i < defs.Count; i++)

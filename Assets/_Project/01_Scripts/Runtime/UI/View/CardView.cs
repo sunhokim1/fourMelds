@@ -14,6 +14,12 @@ public sealed class CardView : MonoBehaviour
     [SerializeField] private Sprite rarityGemRareSprite;
     [SerializeField] private Sprite rarityGemEpicSprite;
     [SerializeField] private Sprite rarityGemLegendarySprite;
+    [SerializeField] private Sprite rarityGemDreamSprite;
+    [SerializeField] private Sprite rarityFrameCommonSprite;
+    [SerializeField] private Sprite rarityFrameRareSprite;
+    [SerializeField] private Sprite rarityFrameEpicSprite;
+    [SerializeField] private Sprite rarityFrameLegendarySprite;
+    [SerializeField] private Sprite rarityFrameDreamSprite;
     [SerializeField] private bool useRarityTint = false;
     [Header("Typography")]
     [SerializeField] private Font preferredTextFont;
@@ -155,7 +161,8 @@ public sealed class CardView : MonoBehaviour
         Sprite gemCommon,
         Sprite gemRare,
         Sprite gemEpic,
-        Sprite gemLegendary)
+        Sprite gemLegendary,
+        Sprite gemDream)
     {
         cardFrameSprite = frameSprite;
         nameBannerSprite = bannerSprite;
@@ -165,17 +172,33 @@ public sealed class CardView : MonoBehaviour
         rarityGemRareSprite = gemRare;
         rarityGemEpicSprite = gemEpic;
         rarityGemLegendarySprite = gemLegendary;
+        rarityGemDreamSprite = gemDream;
 
         ApplySkinSprites();
     }
 
     public void SetRarityTier(int tier)
     {
-        _rarityTier = Mathf.Clamp(tier, 0, 3);
+        _rarityTier = Mathf.Clamp(tier, 0, 4);
 
         if (_rarityGemImage != null)
             _rarityGemImage.gameObject.SetActive(false);
 
+        ApplyRarityVisual();
+    }
+
+    public void SetRarityFrameSprites(
+        Sprite common,
+        Sprite rare,
+        Sprite epic,
+        Sprite legendary,
+        Sprite dream)
+    {
+        rarityFrameCommonSprite = common;
+        rarityFrameRareSprite = rare;
+        rarityFrameEpicSprite = epic;
+        rarityFrameLegendarySprite = legendary;
+        rarityFrameDreamSprite = dream;
         ApplyRarityVisual();
     }
 
@@ -428,6 +451,10 @@ public sealed class CardView : MonoBehaviour
 
     private void ApplyRarityVisual()
     {
+        var rarityFrame = ResolveFrameSpriteForTier();
+        if (_frameImage != null)
+            ApplySprite(_frameImage, rarityFrame != null ? rarityFrame : cardFrameSprite);
+
         if (_usingSimpleLayout && _simpleCardRawImage != null && _simpleCardRawImage.texture == null)
         {
             _simpleCardRawImage.color = new Color(1f, 1f, 1f, 0f);
@@ -445,6 +472,7 @@ public sealed class CardView : MonoBehaviour
 
         Color tint = _rarityTier switch
         {
+            4 => new Color(0.88f, 0.84f, 0.96f, 1f),
             3 => new Color(0.78f, 0.70f, 0.56f, 1f),
             2 => new Color(0.78f, 0.72f, 0.86f, 1f),
             1 => new Color(0.84f, 0.90f, 0.98f, 1f),
@@ -459,6 +487,18 @@ public sealed class CardView : MonoBehaviour
 
         if (_artFrameImage != null)
             _artFrameImage.color = tint;
+    }
+
+    private Sprite ResolveFrameSpriteForTier()
+    {
+        return _rarityTier switch
+        {
+            4 => rarityFrameDreamSprite,
+            3 => rarityFrameLegendarySprite,
+            2 => rarityFrameEpicSprite,
+            1 => rarityFrameRareSprite,
+            _ => rarityFrameCommonSprite
+        };
     }
 
     private static void ApplySprite(Image target, Sprite sprite)

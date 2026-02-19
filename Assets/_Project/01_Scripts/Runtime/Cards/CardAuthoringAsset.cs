@@ -13,7 +13,7 @@ namespace FourMelds.Cards
 
         [Header("Visual")]
         public Sprite cardImage;
-        [Range(0, 3)] public int rarity = 0;
+        [Range(0, 4)] public int rarity = 0;
         [Range(0, 4)] public int suitTheme = 0;
 
         [Header("Text")]
@@ -51,7 +51,7 @@ namespace FourMelds.Cards
                 id = string.IsNullOrWhiteSpace(cardId) ? name : cardId.Trim(),
                 name = GetResolvedName(),
                 description = GetResolvedDescription(),
-                rarity = Mathf.Clamp(rarity, 0, 3),
+                rarity = Mathf.Clamp(rarity, 0, 4),
                 suitTheme = Mathf.Clamp(suitTheme, 0, 4)
             };
 

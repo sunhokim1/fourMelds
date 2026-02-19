@@ -1,7 +1,7 @@
 {
   "id": "draw.honor1",
   "name": "이거 되는지 확인맨",
-  "rarity": 1,
+  "rarity": 0,
   "suitTheme": 4,
   "action": "draw",
   "suit": "honor",

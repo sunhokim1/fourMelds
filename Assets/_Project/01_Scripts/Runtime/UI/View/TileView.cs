@@ -4,9 +4,12 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using Project.InputSystem;
 using Project.UI;
+using System;
 
 public class TileView : MonoBehaviour, IIdentifiable, IPointerClickHandler
 {
+    public static event Action<TileView, PointerEventData.InputButton> OnTileClicked;
+
     [SerializeField] private int id;
     public int Id => id;
 
@@ -29,6 +32,8 @@ public class TileView : MonoBehaviour, IIdentifiable, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        OnTileClicked?.Invoke(this, eventData.button);
+
         if (inputSource == null)
         {
             Debug.LogError("[TileView] MouseActionRequestSource not found");
