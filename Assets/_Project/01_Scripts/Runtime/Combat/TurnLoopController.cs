@@ -38,6 +38,7 @@ namespace FourMelds.Combat
         [SerializeField] private Text _rewardStatusText;
         [SerializeField] private Transform _rewardChoicesRoot;
         [SerializeField] private Button _rewardSkipButton;
+        [SerializeField] [Range(1f, 1.8f)] private float _rewardCardPreviewScale = 1.22f;
         [SerializeField] private int _playerHp = 50;
         [SerializeField] private int _enemyHp = 60;
         [SerializeField] private int _cardsPerTurn = 5;
@@ -897,7 +898,11 @@ namespace FourMelds.Combat
                 int cardIndex = _pendingRewardChoices[i];
                 Button btn = null;
                 if (_cardPanel != null)
-                    btn = _cardPanel.CreatePreviewCardButton(_rewardChoicesRoot, cardIndex, () => OnRewardChoiceSelected(cardIndex));
+                    btn = _cardPanel.CreatePreviewCardButton(
+                        _rewardChoicesRoot,
+                        cardIndex,
+                        () => OnRewardChoiceSelected(cardIndex),
+                        _rewardCardPreviewScale);
                 if (btn == null)
                     btn = CreateRuntimeButton(_rewardChoicesRoot, string.Empty);
 

@@ -22,7 +22,6 @@ public sealed class CardPanelController : MonoBehaviour
 
     [Header("Card Look")]
     [SerializeField] private bool usePrefabCardSize = true;
-    [SerializeField] [Range(0.8f, 1.6f)] private float prefabCardSizeScale = 1.15f;
     [SerializeField] private float cardWidth = 180f;
     [SerializeField] private float cardHeight = 240f;
     [SerializeField] private float cardSpacing = 18f;
@@ -230,14 +229,14 @@ public sealed class CardPanelController : MonoBehaviour
         return true;
     }
 
-    public Button CreatePreviewCardButton(Transform parent, int registryIndex, Action onClick)
+    public Button CreatePreviewCardButton(Transform parent, int registryIndex, Action onClick, float sizeScale = 1f)
     {
         if (buttonPrefab == null || parent == null)
             return null;
 
         var btn = Instantiate(buttonPrefab, parent);
         btn.gameObject.SetActive(true);
-        EnsureButtonLayout(btn);
+        EnsureButtonLayout(btn, sizeScale);
         btn.interactable = true;
         TryRenderCardPreview(btn, registryIndex);
         SetCardInteractableState(btn, true);
@@ -307,7 +306,7 @@ public sealed class CardPanelController : MonoBehaviour
         _layoutReady = true;
     }
 
-    private void EnsureButtonLayout(Button btn)
+    private void EnsureButtonLayout(Button btn, float sizeScale = 1f)
     {
         if (btn == null)
             return;
@@ -315,15 +314,19 @@ public sealed class CardPanelController : MonoBehaviour
         var rt = btn.transform as RectTransform;
         float targetWidth = cardWidth;
         float targetHeight = cardHeight;
+        float scale = Mathf.Max(0.1f, sizeScale);
         if (usePrefabCardSize && rt != null)
         {
-            float scale = Mathf.Max(0.1f, prefabCardSizeScale);
-            targetWidth = rt.sizeDelta.x * scale;
-            targetHeight = rt.sizeDelta.y * scale;
+            var prefabRt = buttonPrefab != null ? buttonPrefab.transform as RectTransform : null;
+            Vector2 baseSize = prefabRt != null ? prefabRt.sizeDelta : rt.sizeDelta;
+            targetWidth = baseSize.x * scale;
+            targetHeight = baseSize.y * scale;
             rt.sizeDelta = new Vector2(targetWidth, targetHeight);
         }
         else if (rt != null)
         {
+            targetWidth *= scale;
+            targetHeight *= scale;
             rt.sizeDelta = new Vector2(targetWidth, targetHeight);
         }
 
