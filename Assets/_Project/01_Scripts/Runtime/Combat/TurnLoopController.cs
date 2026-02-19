@@ -852,7 +852,7 @@ namespace FourMelds.Combat
                 var text = _rewardSkipButton.GetComponentInChildren<Text>(true);
                 if (text != null)
                 {
-                    text.text = "보상 건너뛰기";
+                    text.text = "건너뛰기";
                     text.fontSize = 20;
                     text.alignment = TextAnchor.MiddleCenter;
                 }
